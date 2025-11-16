@@ -7,11 +7,15 @@
     return;
   }
 
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ozon-tracker-button-wrapper floating';
+
   const button = document.createElement('button');
   button.className = 'ozon-tracker-button';
   button.type = 'button';
   button.textContent = 'Следить за ценой';
   button.title = 'Добавить товар в расширение Ozon Price Tracker';
+  wrapper.appendChild(button);
 
   button.addEventListener('click', async () => {
     button.disabled = true;
@@ -30,8 +34,44 @@
     button.disabled = false;
   });
 
-  document.body.appendChild(button);
+  document.body.appendChild(wrapper);
+  const observer = new MutationObserver(() => placeButton(wrapper));
+  observer.observe(document.body, { childList: true, subtree: true });
+  placeButton(wrapper);
 })();
+
+function placeButton(wrapper) {
+  const target = findPlacementNode();
+  if (target && target.parentElement) {
+    wrapper.classList.remove('floating');
+    wrapper.classList.add('inline');
+    const afterNode = target.nextSibling;
+    if (wrapper !== afterNode) {
+      target.parentElement.insertBefore(wrapper, afterNode);
+    }
+    return;
+  }
+  if (wrapper.parentElement !== document.body) {
+    document.body.appendChild(wrapper);
+  }
+  wrapper.classList.add('floating');
+  wrapper.classList.remove('inline');
+}
+
+function findPlacementNode() {
+  const textTargets = ['купить в один клик', 'купить сейчас', 'в корзину'];
+  for (const text of textTargets) {
+    const node = Array.from(document.querySelectorAll('button, a, span'))
+      .find((el) => {
+        const value = el.textContent?.toLowerCase();
+        return value ? value.includes(text) : false;
+      });
+    if (node) {
+      return node.closest('[data-widget]') || node.closest('div') || node;
+    }
+  }
+  return document.querySelector('[data-widget="webPrice"]');
+}
 
 function collectProductData() {
   const title = document.querySelector('h1')?.textContent?.trim();

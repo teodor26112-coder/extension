@@ -1,16 +1,35 @@
-.ozon-tracker-button {
+.ozon-tracker-button-wrapper {
+  z-index: 2147483647;
+}
+
+.ozon-tracker-button-wrapper.inline {
+  margin-top: 12px;
+}
+
+.ozon-tracker-button-wrapper.floating {
   position: fixed;
   bottom: 32px;
   right: 32px;
-  z-index: 2147483647;
+}
+
+.ozon-tracker-button {
+  width: 100%;
   background: #0b67ff;
   color: #fff;
   border: none;
-  padding: 12px 20px;
-  border-radius: 999px;
+  padding: 14px 18px;
+  border-radius: 16px;
   font-size: 15px;
-  box-shadow: 0 10px 25px rgba(11, 103, 255, 0.4);
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(11, 103, 255, 0.2);
   cursor: pointer;
+}
+
+.ozon-tracker-button-wrapper.floating .ozon-tracker-button {
+  width: auto;
+  border-radius: 999px;
+  padding-inline: 24px;
+  box-shadow: 0 10px 25px rgba(11, 103, 255, 0.4);
 }
 
 .ozon-tracker-button:disabled {
