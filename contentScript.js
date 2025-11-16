@@ -41,13 +41,14 @@
 })();
 
 function placeButton(wrapper) {
+  const otherSellers = findOtherSellersNode();
+  if (otherSellers && otherSellers.parentElement) {
+    placeInline(wrapper, otherSellers.parentElement, otherSellers.nextSibling);
+    return;
+  }
   const target = findPlacementNode();
   if (target && target.parentElement) {
-    wrapper.classList.remove('floating');
-    wrapper.classList.add('inline');
-    if (target.previousSibling !== wrapper) {
-      target.parentElement.insertBefore(wrapper, target);
-    }
+    placeInline(wrapper, target.parentElement, target);
     return;
   }
   if (wrapper.parentElement !== document.body) {
@@ -57,19 +58,41 @@ function placeButton(wrapper) {
   wrapper.classList.remove('inline');
 }
 
+function placeInline(wrapper, parent, beforeNode) {
+  wrapper.classList.remove('floating');
+  wrapper.classList.add('inline');
+  if (wrapper.parentElement === parent && wrapper.nextSibling === beforeNode) {
+    return;
+  }
+  parent.insertBefore(wrapper, beforeNode || null);
+}
+
 function findPlacementNode() {
   const textTargets = ['купить в один клик', 'купить сейчас', 'в корзину'];
   for (const text of textTargets) {
-    const node = Array.from(document.querySelectorAll('button, a, span'))
-      .find((el) => {
-        const value = el.textContent?.toLowerCase();
-        return value ? value.includes(text) : false;
-      });
+    const node = findNodeByText(text);
     if (node) {
       return node.closest('[data-widget]') || node.closest('div') || node;
     }
   }
   return document.querySelector('[data-widget="webPrice"]');
+}
+
+function findOtherSellersNode() {
+  const node = findNodeByText('у других продавцов');
+  if (!node) {
+    return null;
+  }
+  return node.closest('[data-widget]') || node.closest('div') || node;
+}
+
+function findNodeByText(text) {
+  const lower = text.toLowerCase();
+  return Array.from(document.querySelectorAll('button, a, span, div, p'))
+    .find((el) => {
+      const value = el.textContent?.toLowerCase();
+      return value ? value.includes(lower) : false;
+    });
 }
 
 function collectProductData() {
