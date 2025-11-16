@@ -1,45 +1,109 @@
-.ozon-tracker-button-wrapper {
-  z-index: 2147483647;
-}
-
-.ozon-tracker-button-wrapper.inline {
-  margin-top: 12px;
-}
-
-.ozon-tracker-button-wrapper.floating {
+.ozon-tracker-widget {
   position: fixed;
   bottom: 32px;
   right: 32px;
+  width: 320px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(7, 29, 73, 0.18);
+  padding: 0 16px 16px;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  z-index: 2147483647;
+  color: #0f1f3d;
 }
 
-.ozon-tracker-button {
-  width: 100%;
+.ozon-tracker-widget.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.ozon-tracker-widget__header {
+  margin: -4px -4px 12px;
+  padding: 14px 20px;
   background: #0b67ff;
   color: #fff;
-  border: none;
-  padding: 14px 18px;
-  border-radius: 16px;
+  font-weight: 600;
+  border-radius: 16px 16px 8px 8px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.ozon-tracker-widget__title {
   font-size: 15px;
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(11, 103, 255, 0.2);
+  margin: 0 0 12px;
+}
+
+.ozon-tracker-widget__stats {
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.ozon-tracker-widget__stats p {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  color: #1c2a4b;
+}
+
+.ozon-tracker-widget__stats span {
+  color: #6b7280;
+}
+
+.ozon-tracker-widget__stats strong {
+  font-weight: 600;
+  color: #0b1733;
+}
+
+.ozon-tracker-widget__hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.ozon-tracker-widget__updated {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 4px 0 16px;
+}
+
+.ozon-tracker-widget__actions {
+  margin-bottom: 12px;
+}
+
+.ozon-tracker-widget__button {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #0b67ff;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 18px;
   cursor: pointer;
+  box-shadow: 0 10px 25px rgba(11, 103, 255, 0.35);
 }
 
-.ozon-tracker-button-wrapper.floating .ozon-tracker-button {
-  width: auto;
-  border-radius: 999px;
-  padding-inline: 24px;
-  box-shadow: 0 10px 25px rgba(11, 103, 255, 0.4);
-}
-
-.ozon-tracker-button:disabled {
+.ozon-tracker-widget__button:disabled {
   opacity: 0.6;
   cursor: progress;
 }
 
+.ozon-tracker-widget__link {
+  background: transparent;
+  border: none;
+  color: #0b67ff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
 .ozon-tracker-toast {
   position: fixed;
-  bottom: 90px;
+  bottom: 280px;
   right: 32px;
   background: #0b67ff;
   color: #fff;
@@ -58,4 +122,17 @@
 
 .ozon-tracker-toast.error {
   background: #b91c1c;
+}
+
+@media (max-width: 640px) {
+  .ozon-tracker-widget {
+    width: calc(100% - 32px);
+    right: 16px;
+    left: 16px;
+  }
+
+  .ozon-tracker-toast {
+    right: 16px;
+    bottom: 260px;
+  }
 }

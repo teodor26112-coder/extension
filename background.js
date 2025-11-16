@@ -57,6 +57,8 @@ async function handleMessage(message) {
       return addProduct(message.payload);
     case 'remove-product':
       return removeProduct(message.payload?.id);
+    case 'get-product-status':
+      return getProductStatus(message.payload?.url);
     case 'update-target-price':
       return updateTargetPrice(message.payload?.id, message.payload?.targetPrice);
     case 'set-global-interval':
@@ -169,6 +171,14 @@ async function updateInterval(minutes) {
     console.debug('Нет активных получателей состояния', error);
   }
   return { ok: true, state: trackerState };
+}
+
+async function getProductStatus(url) {
+  if (!url) {
+    return { ok: false, error: 'Не указана ссылка' };
+  }
+  const item = trackerState.items.find((entry) => entry.url === url) || null;
+  return { ok: true, item };
 }
 
 function ensureAlarm(force = false) {
