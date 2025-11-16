@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ozon Price Tracker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Мониторинг цен</h1>
+        <p>Добавьте ссылку на товар Ozon и желаемую цену.</p>
+      </div>
+      <button id="refresh" title="Обновить цены">⟳</button>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Новый товар</h2>
+        <form id="product-form">
+          <label>
+            Название (по желанию)
+            <input type="text" id="title" placeholder="Например, Наушники" />
+          </label>
+          <label>
+            Ссылка на товар Ozon
+            <input type="url" id="url" placeholder="https://www.ozon.ru/product/..." required />
+          </label>
+          <label>
+            Желаемая цена (₽)
+            <input type="number" id="price" min="1" step="1" required />
+          </label>
+          <button type="submit">Добавить</button>
+        </form>
+        <p class="hint">
+          Данные хранятся локально в chrome.storage и периодически обновляются автоматически.
+        </p>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Отслеживаемые товары</h2>
+          <span id="last-update"></span>
+        </div>
+        <ul id="products"></ul>
+        <p id="empty-state">Список пуст. Добавьте первый товар.</p>
+      </section>
+    </main>
+
+    <template id="product-template">
+      <li class="product-item">
+        <div>
+          <p class="product-title"></p>
+          <p class="product-meta"></p>
+          <p class="product-status"></p>
+        </div>
+        <div class="product-actions">
+          <a class="open-link" target="_blank" rel="noreferrer noopener">Открыть</a>
+          <button class="remove">Удалить</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>
