@@ -13,8 +13,8 @@
   const button = document.createElement('button');
   button.className = 'ozon-tracker-button';
   button.type = 'button';
-  button.textContent = 'Следить за ценой';
-  button.title = 'Добавить товар в расширение Ozon Price Tracker';
+  button.textContent = 'Отслеживать скидку';
+  button.title = 'Добавить товар в отслеживание скидок Ozon';
   wrapper.appendChild(button);
 
   button.addEventListener('click', async () => {
@@ -45,9 +45,8 @@ function placeButton(wrapper) {
   if (target && target.parentElement) {
     wrapper.classList.remove('floating');
     wrapper.classList.add('inline');
-    const afterNode = target.nextSibling;
-    if (wrapper !== afterNode) {
-      target.parentElement.insertBefore(wrapper, afterNode);
+    if (target.previousSibling !== wrapper) {
+      target.parentElement.insertBefore(wrapper, target);
     }
     return;
   }

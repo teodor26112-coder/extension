@@ -3,15 +3,26 @@ import { getDefaultState, loadState, saveState } from './storage.js';
 const ALARM_NAME = 'ozon-price-check';
 const MAX_HISTORY_POINTS = 60;
 
-let trackerState = await loadState();
+let trackerState = getDefaultState();
 
-if (!trackerState || !Array.isArray(trackerState.items)) {
-  trackerState = getDefaultState();
-  await saveState(trackerState);
+initializeState();
+
+async function initializeState() {
+  try {
+    const stored = await loadState();
+    if (stored && Array.isArray(stored.items)) {
+      trackerState = stored;
+    } else {
+      await saveState(trackerState);
+    }
+  } catch (error) {
+    console.error('Не удалось загрузить сохранённое состояние', error);
+    await saveState(trackerState);
+  }
+
+  ensureAlarm(true);
+  checkTrackedProducts(true).catch((error) => console.error('Начальная проверка цен завершилась с ошибкой', error));
 }
-
-ensureAlarm();
-checkTrackedProducts(true).catch((error) => console.error('Начальная проверка цен завершилась с ошибкой', error));
 
 chrome.runtime.onInstalled.addListener(async () => {
   trackerState = await loadState();
