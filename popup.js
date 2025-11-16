@@ -1,156 +1,180 @@
-const form = document.getElementById('product-form');
-const productsList = document.getElementById('products');
-const emptyState = document.getElementById('empty-state');
-const lastUpdateLabel = document.getElementById('last-update');
-const refreshButton = document.getElementById('refresh');
-const template = document.getElementById('product-template');
+import { calcStats, formatPrice, renderChart } from './ui-helpers.js';
 
-let state = [];
+const form = document.getElementById('product-form');
+const titleInput = document.getElementById('title');
+const urlInput = document.getElementById('url');
+const targetInput = document.getElementById('target-price');
+const intervalInput = document.getElementById('interval');
+const productsList = document.getElementById('products');
+const template = document.getElementById('product-template');
+const lastUpdate = document.getElementById('last-update');
+const emptyState = document.getElementById('empty-state');
+const refreshBtn = document.getElementById('refresh');
+const openListBtn = document.getElementById('open-list');
+
+let currentState = null;
 
 init();
 
 function init() {
-  form.addEventListener('submit', handleSubmit);
-  refreshButton.addEventListener('click', handleManualRefresh);
-  productsList.addEventListener('click', handleListClick);
-  loadProducts();
-
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message?.type === 'price-updated') {
-      state = message.products ?? [];
-      render();
-    }
-  });
+  form.addEventListener('submit', onSubmit);
+  intervalInput.addEventListener('change', onIntervalChange);
+  refreshBtn.addEventListener('click', () => manualRefresh());
+  openListBtn.addEventListener('click', openFullList);
+  loadState();
 }
 
-async function loadProducts() {
-  const { trackedProducts = [] } = await chrome.storage.local.get('trackedProducts');
-  state = trackedProducts;
-  render();
-}
-
-async function handleSubmit(event) {
-  event.preventDefault();
-  const product = buildProductFromForm();
-  if (!product) return;
-
-  const { trackedProducts = [] } = await chrome.storage.local.get('trackedProducts');
-  const newProducts = [...trackedProducts, product];
-  await chrome.storage.local.set({ trackedProducts: newProducts });
-  state = newProducts;
-  form.reset();
-  render();
-}
-
-function buildProductFromForm() {
-  const title = document.getElementById('title').value.trim();
-  const url = document.getElementById('url').value.trim();
-  const priceValue = Number(document.getElementById('price').value);
-
-  if (!url || !/^https?:\/\/www\.ozon\.ru\//i.test(url)) {
-    alert('Введите корректную ссылку на товар ozon.ru');
-    return null;
+async function loadState() {
+  const response = await sendMessage({ action: 'get-state' });
+  if (response?.ok) {
+    currentState = response.state;
+    render();
   }
-
-  if (!Number.isFinite(priceValue) || priceValue <= 0) {
-    alert('Укажите целевую цену в рублях.');
-    return null;
-  }
-
-  return {
-    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-    title: title || 'Товар Ozon',
-    url,
-    targetPrice: priceValue,
-    lastPrice: null,
-    lastCheckedAt: null,
-    notified: false,
-  };
-}
-
-function handleListClick(event) {
-  if (event.target.matches('button.remove')) {
-    const item = event.target.closest('.product-item');
-    if (!item) return;
-    const { id } = item.dataset;
-    removeProduct(id);
-  }
-}
-
-async function removeProduct(id) {
-  state = state.filter((item) => item.id !== id);
-  await chrome.storage.local.set({ trackedProducts: state });
-  render();
 }
 
 function render() {
+  if (!currentState) return;
+  intervalInput.value = currentState.refreshIntervalMinutes || 30;
+  const items = Array.isArray(currentState.items) ? currentState.items : [];
   productsList.innerHTML = '';
-
-  if (!state.length) {
-    emptyState.hidden = false;
-    lastUpdateLabel.textContent = '';
+  if (!items.length) {
+    emptyState.style.display = 'block';
+    lastUpdate.textContent = '';
     return;
   }
-
-  emptyState.hidden = true;
-
-  state.forEach((product) => {
-    const node = template.content.firstElementChild.cloneNode(true);
-    node.dataset.id = product.id;
-    node.querySelector('.product-title').textContent = product.title;
-    node.querySelector('.product-meta').textContent = formatMeta(product);
-    const statusEl = node.querySelector('.product-status');
-    const status = buildStatus(product);
-    statusEl.textContent = status.text;
-    statusEl.className = `product-status ${status.variant ?? ''}`.trim();
-    node.querySelector('.open-link').href = product.url;
-    productsList.appendChild(node);
-  });
-
-  const latestCheck = state
+  emptyState.style.display = 'none';
+  const latest = items
     .map((item) => item.lastCheckedAt)
     .filter(Boolean)
-    .sort()
-    .pop();
-
-  lastUpdateLabel.textContent = latestCheck
-    ? `Обновлено: ${new Date(latestCheck).toLocaleString('ru-RU')}`
-    : '';
+    .map((value) => new Date(value).getTime())
+    .reduce((max, value) => (value > max ? value : max), 0);
+  if (latest) {
+    lastUpdate.textContent = `Последнее обновление: ${formatDate(latest)}`;
+  } else {
+    lastUpdate.textContent = '';
+  }
+  items.forEach((item) => {
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.dataset.id = item.id;
+    node.querySelector('.product-title').textContent = item.title || 'Товар Ozon';
+    const link = node.querySelector('.product-link');
+    link.href = item.url;
+    const stats = calcStats(item);
+    node.querySelector('.stat-current').textContent = formatPrice(stats.current);
+    node.querySelector('.stat-average').textContent = formatPrice(stats.average);
+    node.querySelector('.stat-change').textContent = formatChange(stats.changeFromStart);
+    const targetField = node.querySelector('.target-input');
+    targetField.value = typeof item.targetPrice === 'number' ? item.targetPrice : '';
+    node.querySelector('.save-target').addEventListener('click', () => {
+      const value = targetField.value ? Number(targetField.value) : null;
+      updateTarget(item.id, value);
+    });
+    node.querySelector('.remove').addEventListener('click', () => removeProduct(item.id));
+    const canvas = node.querySelector('.chart');
+    renderChart(canvas, item.history);
+    productsList.appendChild(node);
+  });
 }
 
-function formatMeta(product) {
-  const target = formatPrice(product.targetPrice);
-  const last = product.lastPrice ? `${formatPrice(product.lastPrice)} ₽` : '—';
-  return `Цель: ${target} ₽ · Текущая: ${last}`;
-}
-
-function buildStatus(product) {
-  if (typeof product.lastPrice !== 'number') {
-    return { text: 'Цена ещё не загружена' };
-  }
-
-  if (product.lastPrice <= product.targetPrice) {
-    return { text: 'Цель достигнута 🎉', variant: 'success' };
-  }
-
-  const diff = product.lastPrice - product.targetPrice;
-  return {
-    text: `Ещё ${formatPrice(diff)} ₽ до цели`,
-    variant: 'warn',
+async function onSubmit(event) {
+  event.preventDefault();
+  const payload = {
+    title: titleInput.value.trim(),
+    url: urlInput.value.trim(),
+    targetPrice: targetInput.value ? Number(targetInput.value) : null,
   };
+  const response = await sendMessage({ action: 'add-product', payload });
+  if (!response?.ok) {
+    alert(response?.error || 'Не удалось добавить товар');
+    return;
+  }
+  form.reset();
+  currentState = response.state;
+  render();
 }
 
-function formatPrice(value) {
-  if (typeof value !== 'number') return '';
-  return new Intl.NumberFormat('ru-RU').format(value);
+async function removeProduct(id) {
+  const response = await sendMessage({ action: 'remove-product', payload: { id } });
+  if (response?.ok) {
+    currentState = response.state;
+    render();
+  }
 }
 
-async function handleManualRefresh() {
-  setRefreshState(true);
-  await chrome.runtime.sendMessage({ type: 'manual-check' }).catch(() => {});
-  setRefreshState(false);
+async function updateTarget(id, value) {
+  const response = await sendMessage({
+    action: 'update-target-price',
+    payload: { id, targetPrice: value },
+  });
+  if (!response?.ok) {
+    alert(response?.error || 'Не удалось сохранить порог');
+    return;
+  }
+  currentState = response.state;
+  render();
 }
 
-function setRefreshState(isLoading) {
-  refreshButton.disabled = isLoading;
+async function onIntervalChange() {
+  const minutes = Number(intervalInput.value);
+  if (!Number.isFinite(minutes) || minutes < 5) {
+    alert('Интервал не может быть меньше 5 минут');
+    intervalInput.value = currentState?.refreshIntervalMinutes || 30;
+    return;
+  }
+  const response = await sendMessage({ action: 'set-global-interval', payload: { minutes } });
+  if (!response?.ok) {
+    alert(response?.error || 'Не удалось сохранить интервал');
+    intervalInput.value = currentState?.refreshIntervalMinutes || 30;
+    return;
+  }
+  currentState = response.state;
+  render();
 }
+
+async function manualRefresh() {
+  refreshBtn.disabled = true;
+  try {
+    await sendMessage({ action: 'manual-refresh' });
+    await loadState();
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+function openFullList() {
+  chrome.tabs.create({ url: chrome.runtime.getURL('tracked.html') });
+}
+
+function sendMessage(message) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Ошибка обмена сообщениями', chrome.runtime.lastError);
+        resolve({ ok: false, error: chrome.runtime.lastError.message });
+      } else {
+        resolve(response);
+      }
+    });
+  });
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  return date.toLocaleString('ru-RU');
+}
+
+function formatChange(value) {
+  if (typeof value !== 'number') {
+    return '—';
+  }
+  const rounded = Math.round(value);
+  const prefix = rounded > 0 ? '+' : '';
+  return `${prefix}${new Intl.NumberFormat('ru-RU').format(rounded)} ₽`;
+}
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === 'state-updated' && message.state) {
+    currentState = message.state;
+    render();
+  }
+});

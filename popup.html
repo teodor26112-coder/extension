@@ -8,59 +8,91 @@
   <body>
     <header class="app-header">
       <div>
-        <h1>Мониторинг цен</h1>
-        <p>Добавьте ссылку на товар Ozon и желаемую цену.</p>
+        <h1>Мониторинг цен Ozon</h1>
+        <p>Добавьте товар и укажите порог уведомления.</p>
       </div>
-      <button id="refresh" title="Обновить цены">⟳</button>
+      <div class="header-actions">
+        <button id="refresh" class="icon-btn" title="Обновить цены">⟳</button>
+        <button id="open-list" class="icon-btn" title="Открыть полный список">↗</button>
+      </div>
     </header>
 
     <main>
       <section class="card">
-        <h2>Новый товар</h2>
+        <h2>Добавить товар</h2>
         <form id="product-form">
           <label>
-            Название (по желанию)
-            <input type="text" id="title" placeholder="Например, Наушники" />
+            Название (необязательно)
+            <input type="text" id="title" placeholder="Например, Робот-пылесос" />
           </label>
           <label>
             Ссылка на товар Ozon
             <input type="url" id="url" placeholder="https://www.ozon.ru/product/..." required />
           </label>
           <label>
-            Желаемая цена (₽)
-            <input type="number" id="price" min="1" step="1" required />
+            Порог цены для уведомления (₽)
+            <input type="number" id="target-price" min="1" step="1" placeholder="Например, 15000" />
           </label>
-          <button type="submit">Добавить</button>
+          <button type="submit">Добавить в отслеживание</button>
         </form>
-        <p class="hint">
-          Данные хранятся локально в chrome.storage и периодически обновляются автоматически.
-        </p>
+      </section>
+
+      <section class="card">
+        <h2>Настройка обновления</h2>
+        <label class="interval-label">
+          Проверять цены каждые
+          <input type="number" id="interval" min="5" step="5" />
+          минут
+        </label>
+        <p class="hint">Интервал действует для всех товаров.</p>
       </section>
 
       <section class="card">
         <div class="section-header">
-          <h2>Отслеживаемые товары</h2>
-          <span id="last-update"></span>
+          <div>
+            <h2>Отслеживаемые товары</h2>
+            <p id="last-update" class="muted"></p>
+          </div>
         </div>
-        <ul id="products"></ul>
-        <p id="empty-state">Список пуст. Добавьте первый товар.</p>
+        <ul id="products" class="product-list"></ul>
+        <p id="empty-state" class="muted">Список пуст. Добавьте товар через форму или кнопку на странице Ozon.</p>
       </section>
     </main>
 
     <template id="product-template">
       <li class="product-item">
-        <div>
-          <p class="product-title"></p>
-          <p class="product-meta"></p>
-          <p class="product-status"></p>
-        </div>
-        <div class="product-actions">
-          <a class="open-link" target="_blank" rel="noreferrer noopener">Открыть</a>
+        <div class="product-header">
+          <div>
+            <p class="product-title"></p>
+            <a class="product-link" target="_blank" rel="noreferrer noopener">Открыть страницу</a>
+          </div>
           <button class="remove">Удалить</button>
         </div>
+        <div class="product-meta">
+          <div>
+            <span class="label">Текущая</span>
+            <strong class="stat-current"></strong>
+          </div>
+          <div>
+            <span class="label">Средняя</span>
+            <strong class="stat-average"></strong>
+          </div>
+          <div>
+            <span class="label">Изменение</span>
+            <strong class="stat-change"></strong>
+          </div>
+        </div>
+        <div class="product-settings">
+          <label>
+            Порог уведомления
+            <input type="number" min="1" step="1" class="target-input" />
+          </label>
+          <button class="save-target">Сохранить</button>
+        </div>
+        <canvas class="chart" width="320" height="140"></canvas>
       </li>
     </template>
 
-    <script src="popup.js" type="module"></script>
+    <script type="module" src="popup.js"></script>
   </body>
 </html>
