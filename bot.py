@@ -34,6 +34,7 @@ def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         " /start — приветствие\n"
         " /stats — статистика чата и пользователей (админ-модуль)\n"
         " /check_spam <текст> — проверить сообщение на спам\n"
+        " /spam_config, /flood_config, /game_config — настройки модулей (для админов чата)\n"
         " /mute_vote <@user> — запустить голосование за мут\n"
         " Сообщения в чате дают опыт и уровень."
     )

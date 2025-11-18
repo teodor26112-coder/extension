@@ -35,6 +35,17 @@ class DatabaseManager:
         )
         self._execute(
             """
+            CREATE TABLE IF NOT EXISTS chat_settings (
+                chat_id INTEGER,
+                module TEXT,
+                setting_key TEXT,
+                setting_value TEXT,
+                PRIMARY KEY (chat_id, module, setting_key)
+            )
+            """
+        )
+        self._execute(
+            """
             CREATE TABLE IF NOT EXISTS subscriptions (
                 user_id INTEGER PRIMARY KEY,
                 subscription_start_date TEXT,
@@ -153,6 +164,39 @@ class DatabaseManager:
 
     def reset_votes(self, chat_id: int, target_user_id: int) -> None:
         self._execute("DELETE FROM mute_votes WHERE chat_id = ? AND target_user_id = ?", (chat_id, target_user_id))
+
+    def set_chat_setting(self, chat_id: int, module: str, key: str, value: str) -> None:
+        self._execute(
+            """
+            INSERT INTO chat_settings (chat_id, module, setting_key, setting_value)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(chat_id, module, setting_key)
+            DO UPDATE SET setting_value = excluded.setting_value
+            """,
+            (chat_id, module, key, value),
+        )
+
+    def get_chat_setting(self, chat_id: int, module: str, key: str, default: str | None = None) -> str | None:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT setting_value FROM chat_settings WHERE chat_id = ? AND module = ? AND setting_key = ?",
+                (chat_id, module, key),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return default
+        return row[0]
+
+    def get_module_settings(self, chat_id: int, module: str) -> Dict[str, str]:
+        settings: Dict[str, str] = {}
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT setting_key, setting_value FROM chat_settings WHERE chat_id = ? AND module = ?",
+                (chat_id, module),
+            )
+            for key, value in cursor.fetchall():
+                settings[key] = value
+        return settings
 
     def get_stats(self) -> Dict[str, int]:
         chats = self._fetchall("SELECT COUNT(*), COALESCE(SUM(messages_count), 0) FROM chats")
