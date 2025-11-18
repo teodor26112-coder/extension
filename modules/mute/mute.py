@@ -14,11 +14,15 @@ if TYPE_CHECKING:
     from database.manager import DatabaseManager
 
 
-async def start_vote(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def start_vote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Создать или продолжить голосование против указанного пользователя."""
     chat = update.effective_chat
     message = update.message
     if not chat or not message:
+        return
+
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
 
     target_user = None
@@ -63,9 +67,12 @@ async def start_vote(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "Da
         )
 
 
-async def mute_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def mute_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if not chat:
+        return
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
     if not await is_chat_admin(update):
         await update.message.reply_text("Только администратор может менять настройки.")
@@ -91,9 +98,12 @@ async def mute_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     await update.message.reply_text("Настройки сохранены: " + ", ".join(updated))
 
 
-async def mute_status(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def mute_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if not chat:
+        return
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
     settings = db.get_module_settings(chat.id, "mute")
     await update.message.reply_text(
@@ -107,7 +117,7 @@ async def mute_status(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "D
     )
 
 
-def add_handlers(application: Application, db: "DatabaseManager") -> None:
-    application.add_handler(CommandHandler("mute_vote", start_vote, block=False, defaults={"db": db}))
-    application.add_handler(CommandHandler("mute_config", mute_settings, block=False, defaults={"db": db}))
-    application.add_handler(CommandHandler("mute_status", mute_status, block=False, defaults={"db": db}))
+def add_handlers(application: Application, _: "DatabaseManager") -> None:
+    application.add_handler(CommandHandler("mute_vote", start_vote, block=False))
+    application.add_handler(CommandHandler("mute_config", mute_settings, block=False))
+    application.add_handler(CommandHandler("mute_status", mute_status, block=False))

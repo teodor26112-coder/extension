@@ -11,9 +11,12 @@ if TYPE_CHECKING:
     from database.manager import DatabaseManager
 
 
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Показать агрегированную статистику и топ пользователей."""
     chat = update.effective_chat
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
+        return
     db.register_chat(chat.id, chat.title or "Неизвестный чат")
     numbers = db.get_stats()
     chats = db.list_chats()
@@ -43,8 +46,11 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "Databas
     await update.message.reply_text(message)
 
 
-async def activate_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def activate_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Пример активации платной подписки для пользователя."""
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
+        return
     user = update.effective_user
     if not user:
         return
@@ -54,6 +60,6 @@ async def activate_subscription(update: Update, context: ContextTypes.DEFAULT_TY
     )
 
 
-def add_handlers(application: Application, db: "DatabaseManager") -> None:
-    application.add_handler(CommandHandler("stats", stats, block=False, defaults={"db": db}))
-    application.add_handler(CommandHandler("subscribe", activate_subscription, block=False, defaults={"db": db}))
+def add_handlers(application: Application, _: "DatabaseManager") -> None:
+    application.add_handler(CommandHandler("stats", stats, block=False))
+    application.add_handler(CommandHandler("subscribe", activate_subscription, block=False))

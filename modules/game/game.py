@@ -13,11 +13,15 @@ if TYPE_CHECKING:
     from database.manager import DatabaseManager
 
 
-async def reward_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def reward_experience(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.message
     chat = update.effective_chat
     user = update.effective_user
     if not message or not chat or not user:
+        return
+
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
 
     settings = db.get_module_settings(chat.id, "game")
@@ -37,13 +41,17 @@ async def reward_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         )
 
 
-async def game_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def game_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await is_chat_admin(update):
         await update.message.reply_text("Только администратор может менять настройки.")
         return
 
     chat = update.effective_chat
     if not chat:
+        return
+
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
 
     updated = []
@@ -66,9 +74,12 @@ async def game_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     await update.message.reply_text("Настройки сохранены: " + ", ".join(updated))
 
 
-async def game_status(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def game_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if not chat:
+        return
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
     settings = db.get_module_settings(chat.id, "game")
     await update.message.reply_text(
@@ -83,10 +94,10 @@ async def game_status(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "D
     )
 
 
-def add_handlers(application: Application, db: "DatabaseManager") -> None:
+def add_handlers(application: Application, _: "DatabaseManager") -> None:
     application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, reward_experience, block=False, defaults={"db": db}),
+        MessageHandler(filters.TEXT & ~filters.COMMAND, reward_experience, block=False),
         group=2,
     )
-    application.add_handler(CommandHandler("game_config", game_settings, block=False, defaults={"db": db}))
-    application.add_handler(CommandHandler("game_status", game_status, block=False, defaults={"db": db}))
+    application.add_handler(CommandHandler("game_config", game_settings, block=False))
+    application.add_handler(CommandHandler("game_status", game_status, block=False))

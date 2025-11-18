@@ -20,10 +20,14 @@ def _load_keywords(settings: dict) -> List[str]:
     return SPAM_KEYWORDS
 
 
-async def check_spam(update: Update, context: CallbackContext, db: "DatabaseManager") -> None:
+async def check_spam(update: Update, context: CallbackContext) -> None:
     message = update.message
     chat = update.effective_chat
     if not message or not chat:
+        return
+
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
 
     settings = db.get_module_settings(chat.id, "anti_spam")
@@ -40,14 +44,14 @@ async def check_spam(update: Update, context: CallbackContext, db: "DatabaseMana
         context.chat_data.pop("is_spam", None)
 
 
-async def manual_check(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def manual_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Команда /check_spam для проверки конкретного текста."""
-    await check_spam(update, context, db)
+    await check_spam(update, context)
     if "is_spam" not in context.chat_data:
         await update.message.reply_text("Сообщение прошло проверку.")
 
 
-async def spam_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def spam_settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Настройка анти-спама для чата (ключ=значение через пробел)."""
     if not await is_chat_admin(update):
         await update.message.reply_text("Только администратор может менять настройки.")
@@ -55,6 +59,10 @@ async def spam_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
 
     chat = update.effective_chat
     if not chat:
+        return
+
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
 
     updated = []
@@ -77,9 +85,12 @@ async def spam_settings(update: Update, context: ContextTypes.DEFAULT_TYPE, db: 
     await update.message.reply_text("Настройки сохранены: " + ", ".join(updated))
 
 
-async def spam_status(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "DatabaseManager") -> None:
+async def spam_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if not chat:
+        return
+    db = context.application.bot_data.get("db")  # type: ignore[assignment]
+    if not db:
         return
     settings = db.get_module_settings(chat.id, "anti_spam")
     await update.message.reply_text(
@@ -94,11 +105,11 @@ async def spam_status(update: Update, context: ContextTypes.DEFAULT_TYPE, db: "D
     )
 
 
-def add_handlers(application: Application, db: "DatabaseManager") -> None:
+def add_handlers(application: Application, _: "DatabaseManager") -> None:
     application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, check_spam, block=False, defaults={"db": db}),
+        MessageHandler(filters.TEXT & ~filters.COMMAND, check_spam, block=False),
         group=0,
     )
-    application.add_handler(CommandHandler("check_spam", manual_check, block=False, defaults={"db": db}), group=0)
-    application.add_handler(CommandHandler("spam_config", spam_settings, block=False, defaults={"db": db}))
-    application.add_handler(CommandHandler("spam_status", spam_status, block=False, defaults={"db": db}))
+    application.add_handler(CommandHandler("check_spam", manual_check, block=False), group=0)
+    application.add_handler(CommandHandler("spam_config", spam_settings, block=False))
+    application.add_handler(CommandHandler("spam_status", spam_status, block=False))

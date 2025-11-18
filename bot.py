@@ -1,6 +1,5 @@
 import logging
 import os
-from functools import partial
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -41,11 +40,13 @@ def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     update.message.reply_text(help_text)
 
 
-async def register_chat(update: Update, context: ContextTypes.DEFAULT_TYPE, db: DatabaseManager) -> None:
+async def register_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Ensure the chat is present in the database before other handlers run."""
     chat = update.effective_chat
     if chat:
-        db.register_chat(chat.id, chat.title or "Неизвестный чат")
+        db: DatabaseManager | None = context.application.bot_data.get("db")  # type: ignore[assignment]
+        if db:
+            db.register_chat(chat.id, chat.title or "Неизвестный чат")
 
 
 async def main() -> None:
@@ -57,11 +58,12 @@ async def main() -> None:
 
     db_manager = DatabaseManager(DATABASE_PATH)
     db_manager.ensure_schema()
+    application.bot_data["db"] = db_manager
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
 
-    application.add_handler(CommandHandler("register", partial(register_chat, db=db_manager)))
+    application.add_handler(CommandHandler("register", register_chat))
 
     admin.add_handlers(application, db_manager)
     anti_spam.add_handlers(application, db_manager)
