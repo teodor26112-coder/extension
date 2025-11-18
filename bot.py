@@ -69,10 +69,27 @@ def _sanitize_token(raw_token: str | None) -> str:
     return token
 
 
+def _mask_token(token: str) -> str:
+    """Mask the token for logging to help пользователю сверить источник."""
+    if len(token) <= 10:
+        return "***"
+    return f"{token[:6]}***{token[-6:]}"
+
+
 def main() -> None:
-    token = _sanitize_token(os.getenv("BOT_TOKEN", BOT_TOKEN))
+    raw_env_token = os.getenv("BOT_TOKEN")
+    raw_config_token = BOT_TOKEN
+    token_source = "переменная окружения BOT_TOKEN" if raw_env_token else "config.py"
+
+    token = _sanitize_token(raw_env_token or raw_config_token)
     if not token or token == "YOUR_TOKEN":
         raise RuntimeError("Укажите действительный токен в переменной окружения BOT_TOKEN или config.py")
+
+    logger.info(
+        "Используется токен из %s (%s). Если токен не тот, обновите источник и перезапустите бота.",
+        token_source,
+        _mask_token(token),
+    )
 
     try:
         application = ApplicationBuilder().token(token).build()
