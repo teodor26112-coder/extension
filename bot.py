@@ -49,7 +49,7 @@ async def register_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             db.register_chat(chat.id, chat.title or "Неизвестный чат")
 
 
-async def main() -> None:
+def main() -> None:
     token = os.getenv("BOT_TOKEN", BOT_TOKEN)
     if not token or token == "YOUR_TOKEN":
         raise RuntimeError("Укажите действительный токен в переменной окружения BOT_TOKEN или config.py")
@@ -72,10 +72,8 @@ async def main() -> None:
     game.add_handlers(application, db_manager)
 
     logger.info("Бот запущен. Ожидание сообщений...")
-    await application.run_polling()
+    application.run_polling()
 
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+    main()
