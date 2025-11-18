@@ -1,7 +1,9 @@
 import logging
 import os
+import sys
 
 from telegram import Update
+from telegram.error import InvalidToken
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from config import BOT_TOKEN, DATABASE_PATH
@@ -54,7 +56,14 @@ def main() -> None:
     if not token or token == "YOUR_TOKEN":
         raise RuntimeError("Укажите действительный токен в переменной окружения BOT_TOKEN или config.py")
 
-    application = ApplicationBuilder().token(token).build()
+    try:
+        application = ApplicationBuilder().token(token).build()
+    except InvalidToken:
+        logger.error(
+            "Неверный токен. Убедитесь, что вы скопировали токен полностью и заключили его в кавычки "
+            "в config.py или передали через переменную окружения BOT_TOKEN."
+        )
+        sys.exit(1)
 
     db_manager = DatabaseManager(DATABASE_PATH)
     db_manager.ensure_schema()
@@ -72,7 +81,14 @@ def main() -> None:
     game.add_handlers(application, db_manager)
 
     logger.info("Бот запущен. Ожидание сообщений...")
-    application.run_polling()
+    try:
+        application.run_polling()
+    except InvalidToken:
+        logger.error(
+            "Telegram отклонил токен. Проверьте, что он действителен, не содержит пробелов/переводов строки "
+            "и что вы перезапустили бота после изменения токена."
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
