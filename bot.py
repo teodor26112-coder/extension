@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import sys
 
 from telegram import Update
@@ -51,8 +52,25 @@ async def register_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             db.register_chat(chat.id, chat.title or "Неизвестный чат")
 
 
+def _sanitize_token(raw_token: str | None) -> str:
+    """Return a stripped token and log potential formatting issues."""
+    if not raw_token:
+        return ""
+
+    token = raw_token.strip()
+    if raw_token != token:
+        logger.warning("Токен содержал пробелы/переводы строки — они удалены автоматически.")
+
+    token_pattern = re.compile(r"^\d{6,}:[A-Za-z0-9_-]{32,}$")
+    if token and not token_pattern.match(token):
+        logger.error(
+            "Токен не похож на токен BotFather. Проверьте, нет ли лишних символов, пробелов или опечаток."
+        )
+    return token
+
+
 def main() -> None:
-    token = os.getenv("BOT_TOKEN", BOT_TOKEN)
+    token = _sanitize_token(os.getenv("BOT_TOKEN", BOT_TOKEN))
     if not token or token == "YOUR_TOKEN":
         raise RuntimeError("Укажите действительный токен в переменной окружения BOT_TOKEN или config.py")
 
