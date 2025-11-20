@@ -31,8 +31,12 @@
   },
   "content_scripts": [
     {
+      "matches": ["*://*.ozon.ru/*"],
+      "js": ["content-scripts/ozon.js"],
+      "run_at": "document_idle"
+    },
+    {
       "matches": [
-        "*://*.ozon.ru/*",
         "*://*.wildberries.ru/*",
         "*://*.market.yandex.ru/*"
       ],
