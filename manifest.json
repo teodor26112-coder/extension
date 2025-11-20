@@ -36,11 +36,13 @@
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "*://*.wildberries.ru/*",
-        "*://*.market.yandex.ru/*"
-      ],
-      "js": ["content-scripts/pricehunt.js"],
+      "matches": ["*://*.wildberries.ru/*"],
+      "js": ["content-scripts/wildberries.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.market.yandex.ru/*"],
+      "js": ["content-scripts/yandex-market.js"],
       "run_at": "document_idle"
     }
   ]
