@@ -100,3 +100,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ prices });
   }
 });
+
+const INLINE_POPUP_ID = 'pricehunt-inline-popup';
+
+const createInlinePopup = () => {
+  const wrapper = document.createElement('div');
+  wrapper.id = INLINE_POPUP_ID;
+  wrapper.className = 'pricehunt-inline-popup';
+  wrapper.textContent = 'PriceHunt: откройте всплывающее окно, чтобы сравнить цены.';
+  wrapper.style.cssText = [
+    'display:flex',
+    'align-items:center',
+    'gap:8px',
+    'padding:12px',
+    'margin:8px 0',
+    'border:1px solid #dfe3e6',
+    'border-radius:8px',
+    'background:#f7f9fb',
+    'color:#1f1f1f',
+    'font:14px/1.4 "Inter", system-ui, -apple-system, sans-serif'
+  ].join(';');
+  const icon = document.createElement('span');
+  icon.textContent = '🔎';
+  icon.setAttribute('aria-hidden', 'true');
+  wrapper.prepend(icon);
+  return wrapper;
+};
+
+const insertInlinePopup = () => {
+  const saleWidget = document.querySelector('[data-widget="webSale"]');
+  if (!saleWidget) return;
+
+  const topBlock = saleWidget.querySelector('.pdp_ib8');
+  const priceBlock = topBlock?.nextElementSibling;
+
+  if (!topBlock || !priceBlock || !priceBlock.classList.contains('pdp_i7b')) return;
+
+  const existing = saleWidget.querySelector(`#${INLINE_POPUP_ID}`);
+  if (existing) {
+    if (existing.previousElementSibling !== topBlock) {
+      topBlock.insertAdjacentElement('afterend', existing);
+    }
+    return;
+  }
+
+  topBlock.insertAdjacentElement('afterend', createInlinePopup());
+};
+
+const observer = new MutationObserver(() => insertInlinePopup());
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    insertInlinePopup();
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+} else {
+  insertInlinePopup();
+  observer.observe(document.body, { childList: true, subtree: true });
+}
