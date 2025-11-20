@@ -127,60 +127,105 @@ const createInlinePopup = () => {
   return wrapper;
 };
 
-const findByText = (phrases) => {
+const findAllByText = (phrases, root = document) => {
   const needles = Array.isArray(phrases) ? phrases : [phrases];
-  const candidates = document.querySelectorAll('div, section, article, p, span, button, a, h2, h3, h4, h5, h6');
+  const matches = [];
+  const candidates = root.querySelectorAll('div, section, article, p, span, button, a, h2, h3, h4, h5, h6');
 
   for (const node of candidates) {
     const text = node.textContent?.toLowerCase();
     if (!text) continue;
     if (needles.some((needle) => text.includes(needle.toLowerCase()))) {
-      return node;
+      matches.push(node);
     }
   }
 
+  if (matches.length) return matches;
+
   for (const needle of needles) {
-    const result = document.evaluate(
+    const results = document.evaluate(
       `//*[contains(translate(normalize-space(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZЁЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ', 'abcdefghijklmnopqrstuvwxyzёйцукенгшщзхъфывапролджэячсмитьбю'), "${needle.toLowerCase()}")]`,
-      document,
+      root,
       null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
       null
     );
-    if (result.singleNodeValue) return result.singleNodeValue;
+
+    for (let i = 0; i < results.snapshotLength; i += 1) {
+      matches.push(results.snapshotItem(i));
+    }
   }
 
+  return matches;
+};
+
+const findNearestAncestor = (node, selectors = []) => {
+  let current = node;
+  while (current && current !== document.body) {
+    for (const selector of selectors) {
+      if (current.matches?.(selector)) {
+        return current;
+      }
+    }
+    current = current.parentElement;
+  }
   return null;
 };
 
 const insertInlinePopup = () => {
-  const deliveryBlock =
-    findByText(['доставим сегодня', 'доставим завтра', 'доставим', 'доставка']) ||
-    document.querySelector('[data-widget*="Delivery" i]') ||
-    document.querySelector('[data-widget*="delivery" i]');
+  const deliveryBlocks =
+    findAllByText(['доставим сегодня', 'доставим завтра', 'доставим', 'доставка']) || [];
 
-  const cheaperBlock =
-    findByText(['есть дешевле', 'нашли дешевле', 'есть дешевле?']) ||
-    document.querySelector('[data-widget*="Cheaper" i]') ||
-    document.querySelector('[data-widget*="cheaper" i]');
+  const cheaperBlocks =
+    findAllByText(['есть дешевле', 'нашли дешевле', 'есть дешевле?']) || [];
 
-  if (!deliveryBlock && !cheaperBlock) return;
+  if (!deliveryBlocks.length && !cheaperBlocks.length) return;
 
   const existing = document.getElementById(INLINE_POPUP_ID);
   const popup = existing || createInlinePopup();
 
-  if (cheaperBlock && cheaperBlock.parentElement) {
-    const parent = cheaperBlock.parentElement;
-    if (popup.parentElement !== parent || popup.nextElementSibling !== cheaperBlock) {
-      parent.insertBefore(popup, cheaperBlock);
+  const containerSelectors = [
+    '[data-widget*="delivery" i]',
+    '[data-widget*="Delivery" i]',
+    '[data-widget*="Cheaper" i]',
+    '[data-widget*="cheaper" i]',
+    '[data-widget]'
+  ];
+
+  for (const cheaper of cheaperBlocks) {
+    const container =
+      findNearestAncestor(cheaper, containerSelectors) || cheaper.closest('[data-widget], section, article, div');
+    if (!container) continue;
+
+    const scopedDelivery = findAllByText(
+      ['доставим сегодня', 'доставим завтра', 'доставим', 'доставка'],
+      container
+    );
+
+    const delivery = scopedDelivery.find((node) => container.contains(node));
+
+    if (delivery && delivery.compareDocumentPosition(cheaper) & Node.DOCUMENT_POSITION_FOLLOWING) {
+      if (popup.parentElement !== container || popup.previousElementSibling !== delivery) {
+        delivery.insertAdjacentElement('afterend', popup);
+      }
+      return;
+    }
+  }
+
+  const delivery = deliveryBlocks.find((node) => node.parentElement);
+  if (delivery && delivery.parentElement) {
+    const parent = delivery.parentElement;
+    if (popup.parentElement !== parent || popup.previousElementSibling !== delivery) {
+      delivery.insertAdjacentElement('afterend', popup);
     }
     return;
   }
 
-  if (deliveryBlock && deliveryBlock.parentElement) {
-    const parent = deliveryBlock.parentElement;
-    if (popup.parentElement !== parent || popup.previousElementSibling !== deliveryBlock) {
-      deliveryBlock.insertAdjacentElement('afterend', popup);
+  const cheaper = cheaperBlocks.find((node) => node.parentElement);
+  if (cheaper && cheaper.parentElement) {
+    const parent = cheaper.parentElement;
+    if (popup.parentElement !== parent || popup.nextElementSibling !== cheaper) {
+      parent.insertBefore(popup, cheaper);
     }
   }
 };
