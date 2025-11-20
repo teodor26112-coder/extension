@@ -127,24 +127,40 @@ const createInlinePopup = () => {
   return wrapper;
 };
 
+const findByText = (needle) => {
+  const result = document.evaluate(
+    `//*[contains(normalize-space(), "${needle}")]`,
+    document,
+    null,
+    XPathResult.FIRST_ORDERED_NODE_TYPE,
+    null
+  );
+  return result.singleNodeValue;
+};
+
 const insertInlinePopup = () => {
-  const saleWidget = document.querySelector('[data-widget="webSale"]');
-  if (!saleWidget) return;
+  const deliveryBlock = findByText('Доставим сегодня');
+  const cheaperBlock = findByText('Есть дешевле');
 
-  const topBlock = saleWidget.querySelector('.pdp_ib8');
-  const priceBlock = topBlock?.nextElementSibling;
+  if (!deliveryBlock && !cheaperBlock) return;
 
-  if (!topBlock || !priceBlock || !priceBlock.classList.contains('pdp_i7b')) return;
+  const existing = document.getElementById(INLINE_POPUP_ID);
+  const popup = existing || createInlinePopup();
 
-  const existing = saleWidget.querySelector(`#${INLINE_POPUP_ID}`);
-  if (existing) {
-    if (existing.previousElementSibling !== topBlock) {
-      topBlock.insertAdjacentElement('afterend', existing);
+  if (cheaperBlock && cheaperBlock.parentElement) {
+    const parent = cheaperBlock.parentElement;
+    if (popup.parentElement !== parent || popup.nextElementSibling !== cheaperBlock) {
+      parent.insertBefore(popup, cheaperBlock);
     }
     return;
   }
 
-  topBlock.insertAdjacentElement('afterend', createInlinePopup());
+  if (deliveryBlock && deliveryBlock.parentElement) {
+    const parent = deliveryBlock.parentElement;
+    if (popup.parentElement !== parent || popup.previousElementSibling !== deliveryBlock) {
+      deliveryBlock.insertAdjacentElement('afterend', popup);
+    }
+  }
 };
 
 const observer = new MutationObserver(() => insertInlinePopup());
