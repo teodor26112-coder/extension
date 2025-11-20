@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PriceHunt</title>
-  <link rel="stylesheet" href="popup.css" />
+  <title>PriceHunt — Сравнение цен</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="popup">
-    <h1>PriceHunt</h1>
-    <p class="hint">Click "Scan" to fetch visible prices on the active tab.</p>
-    <button id="scan">Scan</button>
-    <ul id="price-list"></ul>
+    <h1>Сравнение цен</h1>
+    <p class="loading" id="loading">Ищем лучшие цены…</p>
+    <section class="results" aria-live="polite">
+      <ul class="result-list" id="price-list">
+        <!-- Результаты подставляются скриптом popup.js -->
+      </ul>
+    </section>
+    <div class="actions">
+      <button id="scan" type="button">Сканировать</button>
+    </div>
   </main>
   <script src="popup.js"></script>
 </body>
