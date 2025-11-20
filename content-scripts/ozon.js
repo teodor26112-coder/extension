@@ -75,4 +75,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.action === 'getProduct') {
     sendResponse(collectOzonProduct());
   }
+
+  if (message?.type === 'PRICE_CHECK_REQUEST') {
+    const product = collectOzonProduct();
+    const formattedPrice =
+      typeof product.price === 'number'
+        ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(
+            product.price
+          )
+        : null;
+
+    const prices = [];
+
+    if (formattedPrice) {
+      prices.push(formattedPrice);
+    }
+
+    if (product.title && formattedPrice) {
+      prices.unshift(`${product.title}: ${formattedPrice}`);
+    } else if (product.title) {
+      prices.unshift(product.title);
+    }
+
+    sendResponse({ prices });
+  }
 });
