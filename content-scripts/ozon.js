@@ -127,20 +127,42 @@ const createInlinePopup = () => {
   return wrapper;
 };
 
-const findByText = (needle) => {
-  const result = document.evaluate(
-    `//*[contains(normalize-space(), "${needle}")]`,
-    document,
-    null,
-    XPathResult.FIRST_ORDERED_NODE_TYPE,
-    null
-  );
-  return result.singleNodeValue;
+const findByText = (phrases) => {
+  const needles = Array.isArray(phrases) ? phrases : [phrases];
+  const candidates = document.querySelectorAll('div, section, article, p, span, button, a, h2, h3, h4, h5, h6');
+
+  for (const node of candidates) {
+    const text = node.textContent?.toLowerCase();
+    if (!text) continue;
+    if (needles.some((needle) => text.includes(needle.toLowerCase()))) {
+      return node;
+    }
+  }
+
+  for (const needle of needles) {
+    const result = document.evaluate(
+      `//*[contains(translate(normalize-space(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZЁЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ', 'abcdefghijklmnopqrstuvwxyzёйцукенгшщзхъфывапролджэячсмитьбю'), "${needle.toLowerCase()}")]`,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    );
+    if (result.singleNodeValue) return result.singleNodeValue;
+  }
+
+  return null;
 };
 
 const insertInlinePopup = () => {
-  const deliveryBlock = findByText('Доставим сегодня');
-  const cheaperBlock = findByText('Есть дешевле');
+  const deliveryBlock =
+    findByText(['доставим сегодня', 'доставим завтра', 'доставим', 'доставка']) ||
+    document.querySelector('[data-widget*="Delivery" i]') ||
+    document.querySelector('[data-widget*="delivery" i]');
+
+  const cheaperBlock =
+    findByText(['есть дешевле', 'нашли дешевле', 'есть дешевле?']) ||
+    document.querySelector('[data-widget*="Cheaper" i]') ||
+    document.querySelector('[data-widget*="cheaper" i]');
 
   if (!deliveryBlock && !cheaperBlock) return;
 
