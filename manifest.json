@@ -31,17 +31,23 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*.ozon.ru/*"],
+      "matches": [
+        "*://*.ozon.ru/*"
+      ],
       "js": ["content-scripts/ozon.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.wildberries.ru/*"],
+      "matches": [
+        "*://*.wildberries.ru/*"
+      ],
       "js": ["content-scripts/wildberries.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://*.market.yandex.ru/*"],
+      "matches": [
+        "*://*.market.yandex.ru/*"
+      ],
       "js": ["content-scripts/yandex-market.js"],
       "run_at": "document_idle"
     }
