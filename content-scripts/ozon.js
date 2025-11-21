@@ -206,12 +206,21 @@ const sendRuntimeMessageWithTimeout = (payload, timeout = 10000) =>
     });
   });
 
+let lastInlineQuery = null;
+
 const fetchInlinePrices = async (popup) => {
+  const product = collectOzonProduct();
+  const searchQuery = product?.title || product?.sku;
+
+  if (searchQuery && searchQuery !== lastInlineQuery) {
+    inlineDataLoaded = false;
+    inlineFetchInFlight = false;
+    lastInlineQuery = searchQuery;
+  }
+
   if (inlineDataLoaded || inlineFetchInFlight) return;
   inlineFetchInFlight = true;
 
-  const product = collectOzonProduct();
-  const searchQuery = product?.title || product?.sku;
   if (!searchQuery) {
     renderInlineStatus(popup, 'Не удалось определить товар', true);
     inlineFetchInFlight = false;
