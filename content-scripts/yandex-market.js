@@ -39,6 +39,65 @@ const extractSkuFromLabels = () => {
   return null;
 };
 
+const INLINE_POPUP_ID = 'pricehunt-inline-popup-ym';
+
+const createInlinePopup = () => {
+  const wrapper = document.createElement('div');
+  wrapper.id = INLINE_POPUP_ID;
+  wrapper.className = 'pricehunt-inline-popup';
+  wrapper.textContent = 'PriceHunt: откройте всплывающее окно, чтобы сравнить цены.';
+  wrapper.style.cssText = [
+    'display:flex',
+    'align-items:center',
+    'gap:8px',
+    'padding:12px',
+    'margin:12px 0',
+    'border:1px solid #dfe3e6',
+    'border-radius:8px',
+    'background:#f7f9fb',
+    'color:#1f1f1f',
+    'font:14px/1.4 "Inter", system-ui, -apple-system, sans-serif',
+    'width:100%',
+    'box-sizing:border-box'
+  ].join(';');
+  const icon = document.createElement('span');
+  icon.textContent = '🔎';
+  icon.setAttribute('aria-hidden', 'true');
+  wrapper.prepend(icon);
+  return wrapper;
+};
+
+const findNearestAncestor = (node, selectors = []) => {
+  let current = node;
+  while (current && current !== document.body) {
+    if (selectors.some((selector) => current.matches?.(selector))) {
+      return current;
+    }
+    current = current.parentElement;
+  }
+  return null;
+};
+
+const insertInlinePopup = () => {
+  const priceNode = document.querySelector(
+    '[data-zone-name="price"] span[aria-label], [data-zone-name="price"] span[role="text"], [data-auto="mainPrice"] span, span[itemprop="price"]'
+  );
+
+  if (!priceNode) return;
+
+  const container =
+    findNearestAncestor(priceNode, ['[data-zone-name="price"]', '[data-auto="mainPrice"]']) || priceNode.parentElement;
+
+  if (!container) return;
+
+  const existing = document.getElementById(INLINE_POPUP_ID);
+  const popup = existing || createInlinePopup();
+
+  if (popup.parentElement !== container) {
+    priceNode.insertAdjacentElement('afterend', popup);
+  }
+};
+
 const collectYandexMarketProduct = () => {
   const title = selectText([
     'h1[data-baobab-name="title"]',
@@ -99,3 +158,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ prices });
   }
 });
+
+const observer = new MutationObserver(() => insertInlinePopup());
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    insertInlinePopup();
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+} else {
+  insertInlinePopup();
+  observer.observe(document.body, { childList: true, subtree: true });
+}
