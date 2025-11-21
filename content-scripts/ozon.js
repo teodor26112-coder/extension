@@ -134,6 +134,20 @@ const MARKETPLACE_LABELS = {
 
 const FALLBACK_IMAGE = chrome.runtime.getURL('icons/icon128.png');
 
+const fallbackProductUrl = (marketplace, title, sku) => {
+  const slug = encodeURIComponent(title || sku || 'offer');
+  switch (marketplace) {
+    case 'ozon':
+      return `https://www.ozon.ru/product/${slug}/?from=pricehunt`;
+    case 'wildberries':
+      return `https://www.wildberries.ru/catalog/${slug}/detail.aspx`;
+    case 'yandex-market':
+      return `https://market.yandex.ru/product--${slug}`;
+    default:
+      return '#';
+  }
+};
+
 const formatPrice = (value) =>
   typeof value === 'number'
     ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(value)
@@ -232,7 +246,8 @@ const createHoverCard = (entry, query) => {
   rating.style.cssText = 'color:#6b7280; margin-bottom:8px;';
 
   const link = document.createElement('a');
-  link.href = entry.productUrl || buildMarketplaceLink(entry.marketplace, entry.title || query || '');
+  link.href =
+    entry.productUrl || fallbackProductUrl(entry.marketplace, entry.title || query, entry.sku || query);
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = 'Открыть предложение';
@@ -251,60 +266,85 @@ const renderInlineEntries = (popup, entries, query) => {
   status.textContent = 'Выгодные предложения:';
   status.style.color = '#374151';
   list.style.display = 'flex';
-  list.style.flexDirection = 'row';
-  list.style.gap = '10px';
-  list.style.flexWrap = 'wrap';
+  list.style.flexDirection = 'column';
+  list.style.gap = '12px';
+  list.style.flexWrap = 'nowrap';
 
-  entries.forEach((entry) => {
-    const card = document.createElement('li');
-    card.style.cssText =
-      'position:relative; list-style:none; width:110px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(15,23,42,0.08); cursor:pointer;';
+  const grouped = entries.reduce((acc, entry) => {
+    const key = entry.marketplace || 'other';
+    acc[key] = acc[key] || [];
+    acc[key].push(entry);
+    return acc;
+  }, {});
 
-    const imageWrap = document.createElement('div');
-    imageWrap.style.cssText = 'width:100%; height:90px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;';
+  Object.entries(grouped).forEach(([marketplace, items]) => {
+    const section = document.createElement('li');
+    section.style.cssText = 'list-style:none; width:100%;';
 
-    const img = document.createElement('img');
-    img.src = entry.image || FALLBACK_IMAGE;
-    img.alt = entry.title || 'Товар';
-    img.style.cssText = 'width:100%; height:100%; object-fit:cover;';
-    imageWrap.appendChild(img);
+    const header = document.createElement('div');
+    header.textContent = MARKETPLACE_LABELS[marketplace] || marketplace;
+    header.style.cssText = 'font-weight:700; margin:0 0 6px; color:#0f172a;';
 
-    const body = document.createElement('div');
-    body.style.cssText = 'padding:8px; display:flex; flex-direction:column; gap:4px;';
+    const grid = document.createElement('div');
+    grid.style.cssText =
+      'display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; width:100%;';
 
-    const marketplaceLabel = document.createElement('div');
-    marketplaceLabel.textContent = MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace;
-    marketplaceLabel.style.cssText = 'font-weight:700; font-size:12px; color:#111827;';
+    items.slice(0, 3).forEach((entry) => {
+      const card = document.createElement('div');
+      card.style.cssText =
+        'position:relative; list-style:none; width:100%; background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(15,23,42,0.08); cursor:pointer; display:flex; flex-direction:column;';
 
-    const price = document.createElement('div');
-    price.textContent = formatPrice(entry.price);
-    price.style.cssText = 'font-weight:800; color:#16a34a; font-size:14px;';
+      const imageWrap = document.createElement('div');
+      imageWrap.style.cssText =
+        'width:100%; height:90px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;';
 
-    const rating = document.createElement('div');
-    rating.textContent = entry.rating ? `⭐ ${entry.rating.toFixed(1)}` : '—';
-    rating.style.cssText = 'color:#6b7280; font-size:12px;';
+      const img = document.createElement('img');
+      img.src = entry.image || FALLBACK_IMAGE;
+      img.alt = entry.title || 'Товар';
+      img.style.cssText = 'width:100%; height:100%; object-fit:cover;';
+      imageWrap.appendChild(img);
 
-    body.append(marketplaceLabel, price, rating);
+      const body = document.createElement('div');
+      body.style.cssText = 'padding:8px; display:flex; flex-direction:column; gap:4px; flex:1;';
 
-    const hoverCard = createHoverCard(entry, query);
-    card.append(imageWrap, body, hoverCard);
+      const title = document.createElement('div');
+      title.textContent = entry.title || query || 'Предложение';
+      title.style.cssText = 'font-size:12px; color:#111827; font-weight:600; line-height:1.35;';
 
-    const openLink = () => {
-      const href = entry.productUrl || buildMarketplaceLink(entry.marketplace, entry.title || query || '');
+      const price = document.createElement('div');
+      price.textContent = formatPrice(entry.price);
+      price.style.cssText = 'font-weight:800; color:#16a34a; font-size:14px;';
+
+      const rating = document.createElement('div');
+      rating.textContent = entry.rating ? `⭐ ${entry.rating.toFixed(1)}` : '—';
+      rating.style.cssText = 'color:#6b7280; font-size:12px;';
+
+      body.append(title, price, rating);
+
+      const hoverCard = createHoverCard(entry, query);
+      card.append(imageWrap, body, hoverCard);
+
+      const openLink = () => {
+      const href =
+        entry.productUrl || fallbackProductUrl(entry.marketplace, entry.title || query, entry.sku || query);
       if (href && href !== '#') {
         window.open(href, '_blank', 'noopener');
       }
-    };
+      };
 
-    card.addEventListener('click', openLink);
-    card.addEventListener('mouseenter', () => {
-      hoverCard.style.display = 'block';
-    });
-    card.addEventListener('mouseleave', () => {
-      hoverCard.style.display = 'none';
+      card.addEventListener('click', openLink);
+      card.addEventListener('mouseenter', () => {
+        hoverCard.style.display = 'block';
+      });
+      card.addEventListener('mouseleave', () => {
+        hoverCard.style.display = 'none';
+      });
+
+      grid.appendChild(card);
     });
 
-    list.appendChild(card);
+    section.append(header, grid);
+    list.appendChild(section);
   });
 };
 
@@ -372,17 +412,31 @@ const fetchInlinePrices = async (popup) => {
 
     const currentPrice = typeof product.price === 'number' ? product.price : null;
     const entries = response.data?.entries || [];
-    const cheaper = entries.filter((entry) =>
-      typeof entry.price === 'number' && currentPrice !== null ? entry.price < currentPrice : true
-    );
 
-    const sorted = (cheaper.length ? cheaper : entries).slice().sort((a, b) => {
-      const aPrice = typeof a.price === 'number' ? a.price : Number.POSITIVE_INFINITY;
-      const bPrice = typeof b.price === 'number' ? b.price : Number.POSITIVE_INFINITY;
-      return aPrice - bPrice;
-    });
+    const grouped = entries.reduce((acc, entry) => {
+      const key = entry.marketplace || 'other';
+      acc[key] = acc[key] || [];
+      acc[key].push(entry);
+      return acc;
+    }, {});
 
-    const offers = sorted.slice(0, 3);
+    const offers = Object.values(grouped)
+      .map((items) => {
+        const sorted = items
+          .slice()
+          .sort((a, b) => {
+            const aPrice = typeof a.price === 'number' ? a.price : Number.POSITIVE_INFINITY;
+            const bPrice = typeof b.price === 'number' ? b.price : Number.POSITIVE_INFINITY;
+            return aPrice - bPrice;
+          })
+          .filter((entry) =>
+            typeof entry.price === 'number' && currentPrice !== null ? entry.price < currentPrice : true
+          );
+
+        const base = sorted.length ? sorted : items;
+        return base.slice(0, 3);
+      })
+      .flat();
 
     if (!offers.length) {
       renderInlineStatus(popup, 'Более выгодные предложения не найдены');

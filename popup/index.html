@@ -7,12 +7,13 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="popup info-only">
+  <main class="popup">
     <h1>PriceHunt</h1>
-    <p class="info-text">
-      Сравнение цен отображается прямо под ценой на странице товара. Откройте карточку на Ozon,
-      Wildberries или Яндекс Маркете, чтобы увидеть предложения.
-    </p>
+    <p class="loading" id="loading">Ищем более выгодные цены...</p>
+    <section class="results">
+      <ul class="result-list" id="result-list"></ul>
+    </section>
+    <p class="hint">Полные карточки товаров также видны под ценой на странице.</p>
   </main>
   <script src="script.js"></script>
 </body>

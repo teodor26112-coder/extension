@@ -7,11 +7,19 @@ const API_ENDPOINTS = {
   'yandex-market': 'https://api.market.yandex.example.com/prices'
 };
 
-const MARKETPLACE_LINKS = {
-  ozon: (query) => `https://www.ozon.ru/search/?text=${encodeURIComponent(query)}`,
-  wildberries: (query) =>
-    `https://www.wildberries.ru/catalog/0/search.aspx?search=${encodeURIComponent(query)}`,
-  'yandex-market': (query) => `https://market.yandex.ru/search?text=${encodeURIComponent(query)}`
+const MARKETPLACE_PRODUCT_LINKS = {
+  ozon: (title = '', sku = '') => {
+    const slug = encodeURIComponent(title || sku || 'offer');
+    return `https://www.ozon.ru/product/${slug}/?from=pricehunt`;
+  },
+  wildberries: (title = '', sku = '') => {
+    const slug = encodeURIComponent(sku || title || 'offer');
+    return `https://www.wildberries.ru/catalog/${slug}/detail.aspx`;
+  },
+  'yandex-market': (title = '', sku = '') => {
+    const slug = encodeURIComponent(title || sku || 'offer');
+    return `https://market.yandex.ru/product--${slug}`;
+  }
 };
 
 const storage = chrome.storage?.local;
@@ -71,16 +79,30 @@ async function fetchMarketplacePrice(marketplace, query, sku) {
   }
 
   const payload = await response.json();
-  return {
-    title: payload.title ?? query ?? '',
-    price: payload.price ?? null,
-    sku: payload.sku ?? sku ?? query,
+  const toEntry = (item) => ({
+    title: item.title || item.name || query || '',
+    price: item.price ?? null,
+    sku: item.sku || sku || query,
     marketplace,
     query: searchParam,
-    image: payload.image || payload.imageUrl || null,
-    rating: typeof payload.rating === 'number' ? payload.rating : null,
-    productUrl: payload.url || payload.productUrl || MARKETPLACE_LINKS[marketplace]?.(searchParam)
-  };
+    image: item.image || item.imageUrl || null,
+    rating: typeof item.rating === 'number' ? item.rating : null,
+    productUrl:
+      item.url ||
+      item.productUrl ||
+      item.link ||
+      MARKETPLACE_PRODUCT_LINKS[marketplace]?.(item.title || query, item.sku || sku)
+  });
+
+  const candidates = Array.isArray(payload?.items)
+    ? payload.items
+    : Array.isArray(payload?.results)
+    ? payload.results
+    : Array.isArray(payload)
+    ? payload
+    : [payload];
+
+  return candidates.slice(0, 3).map(toEntry);
 }
 
 async function queryAllMarketplaces(query, sku) {
@@ -95,7 +117,7 @@ async function queryAllMarketplaces(query, sku) {
   settled.forEach((result, index) => {
     const marketplace = marketplaces[index];
     if (result.status === 'fulfilled') {
-      entries.push(result.value);
+      entries.push(...(Array.isArray(result.value) ? result.value : [result.value]));
     } else {
       errors.push({ marketplace, error: formatError(result.reason) });
     }
@@ -119,7 +141,10 @@ function buildSyntheticEntries(fallbackProduct, query) {
       query: query || fallbackProduct.title || fallbackProduct.sku,
       image: fallbackProduct.image || null,
       rating: 4 + (index * 0.2 + Math.random() * 0.2),
-      productUrl: MARKETPLACE_LINKS[marketplace]?.(query || fallbackProduct.title || '')
+      productUrl: MARKETPLACE_PRODUCT_LINKS[marketplace]?.(
+        fallbackProduct.title || query,
+        fallbackProduct.sku || query
+      )
     }))
     .filter((entry) => entry.price < basePrice);
 }
