@@ -143,7 +143,8 @@ const createInlinePopup = () => {
 
   const list = document.createElement('ul');
   list.className = 'pricehunt-inline-list';
-  list.style.cssText = 'padding-left:16px; margin:0; color:#111827; display:flex; flex-direction:column; gap:4px;';
+  list.style.cssText =
+    'padding:0; margin:0; color:#111827; display:flex; flex-direction:column; gap:8px; list-style:none; width:100%;';
 
   content.appendChild(title);
   content.appendChild(status);
@@ -163,21 +164,58 @@ const renderInlineStatus = (popup, message, isError = false) => {
   }
 };
 
-const renderInlineEntries = (popup, entries) => {
+const buildMarketplaceLink = (marketplace, query) => {
+  const q = encodeURIComponent(query || '');
+  switch (marketplace) {
+    case 'ozon':
+      return `https://www.ozon.ru/search/?text=${q}`;
+    case 'wildberries':
+      return `https://www.wildberries.ru/catalog/0/search.aspx?search=${q}`;
+    case 'yandex-market':
+      return `https://market.yandex.ru/search?text=${q}`;
+    default:
+      return '#';
+  }
+};
+
+const renderInlineEntries = (popup, entries, query) => {
   const list = popup.querySelector('.pricehunt-inline-list');
   const status = popup.querySelector('.pricehunt-inline-status');
   if (!list || !status) return;
   list.innerHTML = '';
-  status.textContent = 'Нашли более выгодные предложения:';
+  status.textContent = 'Нашли предложения рядом:';
   status.style.color = '#374151';
 
   entries.forEach((entry) => {
     const li = document.createElement('li');
-    li.textContent = `${MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace}: ${
+    li.style.cssText =
+      'list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.04);';
+
+    const textWrap = document.createElement('div');
+    textWrap.style.cssText = 'display:flex; flex-direction:column; gap:2px; max-width:65%;';
+
+    const label = document.createElement('div');
+    label.textContent = MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace;
+    label.style.cssText = 'font-weight:600; color:#111827;';
+
+    const price = document.createElement('div');
+    price.textContent =
       typeof entry.price === 'number'
         ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(entry.price)
-        : '—'
-    }`;
+        : '—';
+    price.style.cssText = 'color:#16a34a; font-weight:600;';
+
+    textWrap.append(label, price);
+
+    const link = document.createElement('a');
+    link.href = buildMarketplaceLink(entry.marketplace, entry.title || query || '');
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Перейти';
+    link.style.cssText =
+      'padding:8px 12px; background:#2563eb; color:#fff; border-radius:8px; text-decoration:none; font-weight:600; white-space:nowrap;';
+
+    li.append(textWrap, link);
     list.appendChild(li);
   });
 };
@@ -250,10 +288,18 @@ const fetchInlinePrices = async (popup) => {
       typeof entry.price === 'number' && currentPrice !== null ? entry.price < currentPrice : true
     );
 
-    if (!cheaper.length) {
+    const sorted = (cheaper.length ? cheaper : entries).slice().sort((a, b) => {
+      const aPrice = typeof a.price === 'number' ? a.price : Number.POSITIVE_INFINITY;
+      const bPrice = typeof b.price === 'number' ? b.price : Number.POSITIVE_INFINITY;
+      return aPrice - bPrice;
+    });
+
+    const offers = sorted.slice(0, 3);
+
+    if (!offers.length) {
       renderInlineStatus(popup, 'Более выгодные предложения не найдены');
     } else {
-      renderInlineEntries(popup, cheaper.slice(0, 3));
+      renderInlineEntries(popup, offers, product.title || searchQuery || '');
     }
 
     inlineDataLoaded = true;
