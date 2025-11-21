@@ -185,6 +185,27 @@ const renderInlineEntries = (popup, entries) => {
 let inlineFetchInFlight = false;
 let inlineDataLoaded = false;
 
+const sendRuntimeMessageWithTimeout = (payload, timeout = 10000) =>
+  new Promise((resolve, reject) => {
+    let finished = false;
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      reject(new Error('Timeout waiting for background response'));
+    }, timeout);
+
+    chrome.runtime.sendMessage(payload, (res) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+        return;
+      }
+      resolve(res);
+    });
+  });
+
 const fetchInlinePrices = async (popup) => {
   if (inlineDataLoaded || inlineFetchInFlight) return;
   inlineFetchInFlight = true;
@@ -200,26 +221,16 @@ const fetchInlinePrices = async (popup) => {
   renderInlineStatus(popup, 'Ищем более выгодные цены...');
 
   try {
-    const response = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(
-        {
-          action: 'comparePrices',
-          title: product.title,
-          sku: product.sku,
-          fallbackProduct: product
-        },
-        (res) => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-            return;
-          }
-          resolve(res);
-        }
-      );
+    const response = await sendRuntimeMessageWithTimeout({
+      action: 'comparePrices',
+      title: product.title,
+      sku: product.sku,
+      fallbackProduct: product
     });
 
     if (!response?.success) {
       renderInlineStatus(popup, response?.error || 'Не удалось получить цены', true);
+      inlineDataLoaded = true;
       inlineFetchInFlight = false;
       return;
     }
@@ -239,6 +250,7 @@ const fetchInlinePrices = async (popup) => {
     inlineDataLoaded = true;
   } catch (error) {
     renderInlineStatus(popup, 'Ошибка при получении цен', true);
+    inlineDataLoaded = true;
   } finally {
     inlineFetchInFlight = false;
   }
