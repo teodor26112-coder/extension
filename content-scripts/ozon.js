@@ -190,7 +190,8 @@ const fetchInlinePrices = async (popup) => {
   inlineFetchInFlight = true;
 
   const product = collectOzonProduct();
-  if (!product?.sku) {
+  const searchQuery = product?.title || product?.sku;
+  if (!searchQuery) {
     renderInlineStatus(popup, 'Не удалось определить товар', true);
     inlineFetchInFlight = false;
     return;
@@ -203,6 +204,7 @@ const fetchInlinePrices = async (popup) => {
       chrome.runtime.sendMessage(
         {
           action: 'comparePrices',
+          title: product.title,
           sku: product.sku,
           fallbackProduct: product
         },

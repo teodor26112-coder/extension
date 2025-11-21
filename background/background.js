@@ -9,22 +9,24 @@ const API_ENDPOINTS = {
 
 const storage = chrome.storage?.local;
 
-function cacheKey(sku) {
-  return `pricehunt-cache-${sku}`;
+const normalizeQuery = (value) => value?.trim().toLowerCase() || null;
+
+function cacheKey(query) {
+  return `pricehunt-cache-${encodeURIComponent(query)}`;
 }
 
-async function readCache(sku) {
+async function readCache(query) {
   if (!storage) return null;
-  const key = cacheKey(sku);
+  const key = cacheKey(query);
   const stored = await new Promise((resolve) => storage.get(key, (value) => resolve(value[key])));
   if (!stored) return null;
   const isFresh = Date.now() - stored.timestamp < CACHE_TTL_MS;
   return isFresh ? stored.data : null;
 }
 
-async function writeCache(sku, data) {
+async function writeCache(query, data) {
   if (!storage) return;
-  const key = cacheKey(sku);
+  const key = cacheKey(query);
   await new Promise((resolve) => storage.set({ [key]: { timestamp: Date.now(), data } }, () => resolve()));
 }
 
@@ -46,11 +48,14 @@ async function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT_MS)
   }
 }
 
-async function fetchMarketplacePrice(marketplace, sku) {
+async function fetchMarketplacePrice(marketplace, query, sku) {
   const endpoint = API_ENDPOINTS[marketplace];
   if (!endpoint) throw new Error(`Unsupported marketplace: ${marketplace}`);
 
-  const url = `${endpoint}?sku=${encodeURIComponent(sku)}`;
+  const searchParam = query || sku;
+  const url = `${endpoint}?q=${encodeURIComponent(searchParam)}${
+    sku ? `&sku=${encodeURIComponent(sku)}` : ''
+  }`;
   const response = await fetchWithTimeout(url, { method: 'GET' });
 
   if (!response.ok) {
@@ -60,17 +65,18 @@ async function fetchMarketplacePrice(marketplace, sku) {
 
   const payload = await response.json();
   return {
-    title: payload.title ?? '',
+    title: payload.title ?? query ?? '',
     price: payload.price ?? null,
-    sku: payload.sku ?? sku,
-    marketplace
+    sku: payload.sku ?? sku ?? query,
+    marketplace,
+    query: searchParam
   };
 }
 
-async function queryAllMarketplaces(sku) {
+async function queryAllMarketplaces(query, sku) {
   const marketplaces = Object.keys(API_ENDPOINTS);
   const settled = await Promise.allSettled(
-    marketplaces.map((marketplace) => fetchMarketplacePrice(marketplace, sku))
+    marketplaces.map((marketplace) => fetchMarketplacePrice(marketplace, query, sku))
   );
 
   const entries = [];
@@ -88,7 +94,7 @@ async function queryAllMarketplaces(sku) {
   return { entries, errors };
 }
 
-function buildSyntheticEntries(fallbackProduct, sku) {
+function buildSyntheticEntries(fallbackProduct, query) {
   if (typeof fallbackProduct?.price !== 'number' || fallbackProduct.price <= 0) return [];
 
   const basePrice = fallbackProduct.price;
@@ -96,44 +102,48 @@ function buildSyntheticEntries(fallbackProduct, sku) {
 
   return ['wildberries', 'yandex-market', 'ozon']
     .map((marketplace, index) => ({
-      title: fallbackProduct.title || '',
+      title: fallbackProduct.title || query || '',
       price: Math.max(1, Math.round(basePrice * discounts[index % discounts.length])),
-      sku: fallbackProduct.sku || sku,
-      marketplace
+      sku: fallbackProduct.sku || query,
+      marketplace,
+      query: query || fallbackProduct.title || fallbackProduct.sku
     }))
     .filter((entry) => entry.price < basePrice);
 }
 
 async function handleComparePrices(message) {
-  const { sku, fallbackProduct } = message;
-  if (!sku) {
-    return { success: false, error: 'SKU is required' };
+  const { sku, fallbackProduct, title, query } = message;
+  const rawQuery = title || query || fallbackProduct?.title || sku || fallbackProduct?.sku;
+  const searchQuery = normalizeQuery(rawQuery);
+  if (!searchQuery) {
+    return { success: false, error: 'Product title is required' };
   }
 
-  const cached = await readCache(sku);
+  const cached = await readCache(searchQuery);
   if (cached) {
     return { success: true, cached: true, data: cached };
   }
 
   try {
-    const data = await queryAllMarketplaces(sku);
+    const data = await queryAllMarketplaces(rawQuery, sku);
 
     if (!data.entries.length && fallbackProduct?.price !== undefined) {
-      const synthetic = buildSyntheticEntries(fallbackProduct, sku);
+      const synthetic = buildSyntheticEntries(fallbackProduct, searchQuery);
       if (synthetic.length) {
         data.entries.push(...synthetic);
         data.errors = [];
       } else {
         data.entries.push({
-          title: fallbackProduct.title || '',
+          title: fallbackProduct.title || searchQuery || '',
           price: fallbackProduct.price ?? null,
-          sku: fallbackProduct.sku || sku,
-          marketplace: fallbackProduct.marketplace || 'ozon'
+          sku: fallbackProduct.sku || searchQuery,
+          marketplace: fallbackProduct.marketplace || 'ozon',
+          query: searchQuery
         });
       }
     }
 
-    await writeCache(sku, data);
+    await writeCache(searchQuery, data);
     return { success: true, cached: false, data };
   } catch (error) {
     return { success: false, error: formatError(error) };

@@ -5,10 +5,10 @@ const MARKETPLACE_LABELS = {
 };
 
 const MARKETPLACE_LINKS = {
-  ozon: (sku) => `https://www.ozon.ru/search/?text=${encodeURIComponent(sku)}`,
-  wildberries: (sku) =>
-    `https://www.wildberries.ru/catalog/0/search.aspx?search=${encodeURIComponent(sku)}`,
-  'yandex-market': (sku) => `https://market.yandex.ru/search?text=${encodeURIComponent(sku)}`
+  ozon: (query) => `https://www.ozon.ru/search/?text=${encodeURIComponent(query)}`,
+  wildberries: (query) =>
+    `https://www.wildberries.ru/catalog/0/search.aspx?search=${encodeURIComponent(query)}`,
+  'yandex-market': (query) => `https://market.yandex.ru/search?text=${encodeURIComponent(query)}`
 };
 
 const formatPrice = (value) => {
@@ -51,7 +51,7 @@ const renderMessage = (priceList, message, type = 'error') => {
   priceList.appendChild(li);
 };
 
-const renderResults = (priceList, entries, errors, sku) => {
+const renderResults = (priceList, entries, errors, query) => {
   priceList.innerHTML = '';
   if (!entries.length) {
     if (errors?.length) {
@@ -90,7 +90,8 @@ const renderResults = (priceList, entries, errors, sku) => {
     }
 
     const link = document.createElement('a');
-    link.href = MARKETPLACE_LINKS[entry.marketplace]?.(entry.sku || sku) || '#';
+    const searchParam = entry.title || entry.query || query || entry.sku;
+    link.href = MARKETPLACE_LINKS[entry.marketplace]?.(searchParam || '') || '#';
     link.target = '_blank';
     link.rel = 'noreferrer noopener';
     link.textContent = 'Перейти';
@@ -131,13 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const product = await sendMessageToTab(activeTab.id, { action: 'getProduct' });
-      if (!product?.sku) {
+      if (!product?.title) {
         handleError('Не удалось определить товар');
         return;
       }
 
       const response = await sendRuntimeMessage({
         action: 'comparePrices',
+        title: product.title,
         sku: product.sku,
         fallbackProduct: {
           title: product.title,
@@ -151,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      renderResults(priceList, response.data?.entries || [], response.data?.errors || [], product.sku);
+      renderResults(priceList, response.data?.entries || [], response.data?.errors || [], product.title);
       setLoading(false);
     } catch (error) {
       handleError('Не удалось определить товар');
