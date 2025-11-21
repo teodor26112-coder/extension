@@ -2,7 +2,8 @@
 body {
   font-family: Arial, sans-serif;
   margin: 0;
-  min-width: 260px;
+  width: 350px;
+  min-width: 350px;
   background: #f7f8fb;
   color: #1f2430;
 }
@@ -56,7 +57,7 @@ button:hover {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .result-item {
@@ -64,9 +65,11 @@ button:hover {
   grid-template-columns: 1fr auto auto;
   gap: 8px;
   align-items: center;
-  padding: 6px 8px;
-  border: 1px solid #edf0f5;
-  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid #dce1eb;
+  border-radius: 8px;
+  background: #fdfefe;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .result-item .marketplace {
@@ -75,6 +78,11 @@ button:hover {
 
 .result-item .price {
   color: #2d3748;
+}
+
+.result-item.best-price {
+  background: #e5f7eb;
+  border-color: #8bd5a8;
 }
 
 .result-item .open-link {
