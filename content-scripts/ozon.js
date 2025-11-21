@@ -225,6 +225,14 @@ const insertInlinePopup = () => {
     return null;
   };
 
+  const hasBuyingContext = (node) => {
+    if (!node) return false;
+    const widgetBonus = widgetMatches(node, ['price', 'delivery', 'cheaper', 'button', 'cart', 'buy']);
+    const hasPriceBlock = node.querySelector?.('[data-widget*="Price" i], [data-widget*="price" i]');
+    const hasBuyButton = findAllByText(['в корзину', 'добавить в корзину', 'купить'], node).length > 0;
+    return Boolean(widgetBonus || hasPriceBlock || hasBuyButton);
+  };
+
   let targetDelivery = null;
   let targetCheaper = null;
   let targetContainer = null;
@@ -244,7 +252,7 @@ const insertInlinePopup = () => {
         }
         return d;
       })();
-      const score = depth + (widgetMatches(ancestor, ['delivery', 'cheaper']) ? 5 : 0);
+      const score = depth + (widgetMatches(ancestor, ['delivery', 'cheaper']) ? 5 : 0) + (hasBuyingContext(ancestor) ? 10 : 0);
       if (score > bestScore) {
         bestScore = score;
         targetDelivery = delivery;
@@ -263,7 +271,7 @@ const insertInlinePopup = () => {
     return;
   }
 
-  const delivery = scopedDelivery.find((node) => node.parentElement);
+  const delivery = scopedDelivery.find((node) => node.parentElement && hasBuyingContext(node.parentElement));
   if (delivery && delivery.parentElement) {
     const parent = delivery.parentElement;
     if (popup.parentElement !== parent || popup.previousElementSibling !== delivery) {
@@ -272,12 +280,18 @@ const insertInlinePopup = () => {
     return;
   }
 
-  const cheaper = scopedCheaper.find((node) => node.parentElement);
+  const cheaper = scopedCheaper.find((node) => node.parentElement && hasBuyingContext(node.parentElement));
   if (cheaper && cheaper.parentElement) {
     const parent = cheaper.parentElement;
     if (popup.parentElement !== parent || popup.nextElementSibling !== cheaper) {
       parent.insertBefore(popup, cheaper);
     }
+    return;
+  }
+
+  const fallbackTarget = scopedDelivery[0] || scopedCheaper[0];
+  if (fallbackTarget && fallbackTarget.parentElement) {
+    fallbackTarget.insertAdjacentElement('afterend', popup);
   }
 };
 
