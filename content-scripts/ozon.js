@@ -102,12 +102,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 const INLINE_POPUP_ID = 'pricehunt-inline-popup';
+const MARKETPLACE_LABELS = {
+  ozon: 'Ozon',
+  wildberries: 'Wildberries',
+  'yandex-market': 'Яндекс Маркет'
+};
 
 const createInlinePopup = () => {
   const wrapper = document.createElement('div');
   wrapper.id = INLINE_POPUP_ID;
   wrapper.className = 'pricehunt-inline-popup';
-  wrapper.textContent = 'PriceHunt: откройте всплывающее окно, чтобы сравнить цены.';
   wrapper.style.cssText = [
     'display:flex',
     'align-items:center',
@@ -125,8 +129,117 @@ const createInlinePopup = () => {
   const icon = document.createElement('span');
   icon.textContent = '🔎';
   icon.setAttribute('aria-hidden', 'true');
-  wrapper.prepend(icon);
+  const content = document.createElement('div');
+  content.style.cssText = 'display:flex; flex-direction:column; gap:6px; width:100%;';
+
+  const title = document.createElement('div');
+  title.textContent = 'PriceHunt — выгоднее рядом:';
+  title.style.cssText = 'font-weight:600; color:#111827;';
+
+  const status = document.createElement('div');
+  status.className = 'pricehunt-inline-status';
+  status.textContent = 'Ищем более выгодные цены...';
+  status.style.cssText = 'color:#374151;';
+
+  const list = document.createElement('ul');
+  list.className = 'pricehunt-inline-list';
+  list.style.cssText = 'padding-left:16px; margin:0; color:#111827; display:flex; flex-direction:column; gap:4px;';
+
+  content.appendChild(title);
+  content.appendChild(status);
+  content.appendChild(list);
+
+  wrapper.append(icon, content);
   return wrapper;
+};
+
+const renderInlineStatus = (popup, message, isError = false) => {
+  const status = popup.querySelector('.pricehunt-inline-status');
+  const list = popup.querySelector('.pricehunt-inline-list');
+  if (list) list.innerHTML = '';
+  if (status) {
+    status.textContent = message;
+    status.style.color = isError ? '#b91c1c' : '#374151';
+  }
+};
+
+const renderInlineEntries = (popup, entries) => {
+  const list = popup.querySelector('.pricehunt-inline-list');
+  const status = popup.querySelector('.pricehunt-inline-status');
+  if (!list || !status) return;
+  list.innerHTML = '';
+  status.textContent = 'Нашли более выгодные предложения:';
+  status.style.color = '#374151';
+
+  entries.forEach((entry) => {
+    const li = document.createElement('li');
+    li.textContent = `${MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace}: ${
+      typeof entry.price === 'number'
+        ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(entry.price)
+        : '—'
+    }`;
+    list.appendChild(li);
+  });
+};
+
+let inlineFetchInFlight = false;
+let inlineDataLoaded = false;
+
+const fetchInlinePrices = async (popup) => {
+  if (inlineDataLoaded || inlineFetchInFlight) return;
+  inlineFetchInFlight = true;
+
+  const product = collectOzonProduct();
+  if (!product?.sku) {
+    renderInlineStatus(popup, 'Не удалось определить товар', true);
+    inlineFetchInFlight = false;
+    return;
+  }
+
+  renderInlineStatus(popup, 'Ищем более выгодные цены...');
+
+  try {
+    const response = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        {
+          action: 'comparePrices',
+          sku: product.sku,
+          fallbackProduct: product
+        },
+        (res) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+            return;
+          }
+          resolve(res);
+        }
+      );
+    });
+
+    if (!response?.success) {
+      renderInlineStatus(popup, response?.error || 'Не удалось получить цены', true);
+      inlineFetchInFlight = false;
+      return;
+    }
+
+    const currentPrice = typeof product.price === 'number' ? product.price : null;
+    const entries = response.data?.entries || [];
+    const cheaper = entries.filter((entry) =>
+      typeof entry.price === 'number' && currentPrice !== null ? entry.price < currentPrice : true
+    );
+
+    if (!cheaper.length) {
+      renderInlineStatus(popup, 'Более выгодные предложения не найдены');
+    } else {
+      renderInlineEntries(popup, cheaper.slice(0, 3));
+    }
+
+    inlineDataLoaded = true;
+  } catch (error) {
+    renderInlineStatus(popup, 'Ошибка при получении цен', true);
+  } finally {
+    inlineFetchInFlight = false;
+  }
 };
 
 const findAllByText = (phrases, root = document) => {
@@ -228,6 +341,8 @@ const insertInlinePopup = () => {
   } else {
     insertAfterPrice();
   }
+
+  fetchInlinePrices(popup);
 };
 
 const observer = new MutationObserver(() => insertInlinePopup());
