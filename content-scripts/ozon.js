@@ -175,123 +175,64 @@ const findNearestAncestor = (node, selectors = []) => {
 };
 
 const insertInlinePopup = () => {
-  const deliveryBlocks =
-    findAllByText(['доставим сегодня', 'доставим завтра', 'доставим', 'доставка']) || [];
-
-  const cheaperBlocks =
-    findAllByText(['есть дешевле', 'нашли дешевле', 'есть дешевле?']) || [];
+  const deliveryBlocks = findAllByText(['доставим', 'доставка']) || [];
+  const cheaperBlocks = findAllByText(['есть дешевле', 'нашли дешевле']) || [];
 
   if (!deliveryBlocks.length && !cheaperBlocks.length) return;
 
   const existing = document.getElementById(INLINE_POPUP_ID);
   const popup = existing || createInlinePopup();
 
-  const widgetMatches = (node, keywords) =>
-    keywords.some((kw) => node?.getAttribute?.('data-widget')?.toLowerCase()?.includes(kw));
+  const chooseTarget = () => {
+    const preferWidget = (nodes, keyword) =>
+      nodes.sort((a, b) => {
+        const aMatch = a.getAttribute?.('data-widget')?.toLowerCase()?.includes(keyword) ? 1 : 0;
+        const bMatch = b.getAttribute?.('data-widget')?.toLowerCase()?.includes(keyword) ? 1 : 0;
+        if (aMatch !== bMatch) return bMatch - aMatch;
+        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
 
-  const filterByWidgetAndText = (nodes, widgetKeywords) =>
-    nodes
-      .map((node) => ({
-        node,
-        hasWidget: widgetMatches(node, widgetKeywords),
-        depth: (() => {
-          let depth = 0;
-          let current = node;
-          while (current && current !== document.body) {
-            depth += 1;
-            current = current.parentElement;
-          }
-          return depth;
-        })()
-      }))
-      .sort((a, b) => Number(b.hasWidget) - Number(a.hasWidget) || b.depth - a.depth)
-      .map((item) => item.node);
+    const prioritizedCheaper = preferWidget([...cheaperBlocks], 'cheaper');
+    const prioritizedDelivery = preferWidget([...deliveryBlocks], 'delivery');
 
-  const scopedDelivery = filterByWidgetAndText(deliveryBlocks, ['delivery']);
-  const scopedCheaper = filterByWidgetAndText(cheaperBlocks, ['cheaper']);
+    const cheaperNode = prioritizedCheaper[0] || null;
+    const deliveryNode = prioritizedDelivery.find((node) =>
+      cheaperNode
+        ? node.compareDocumentPosition(cheaperNode) & Node.DOCUMENT_POSITION_FOLLOWING
+        : true
+    );
 
-  const findCommonAncestor = (a, b) => {
-    const ancestors = new Set();
-    let current = a;
-    while (current) {
-      ancestors.add(current);
-      current = current.parentElement;
+    if (!cheaperNode && !deliveryNode) return null;
+
+    const anchor = cheaperNode || deliveryNode;
+    let ancestor = anchor?.parentElement;
+    while (ancestor && ancestor !== document.body) {
+      const containsDelivery = deliveryNode ? ancestor.contains(deliveryNode) : true;
+      const containsCheaper = cheaperNode ? ancestor.contains(cheaperNode) : true;
+      if (containsDelivery && containsCheaper) break;
+      ancestor = ancestor.parentElement;
     }
-    current = b;
-    while (current) {
-      if (ancestors.has(current)) return current;
-      current = current.parentElement;
-    }
-    return null;
+
+    return {
+      anchor,
+      container: ancestor || anchor?.parentElement || document.body,
+      insertBefore: Boolean(cheaperNode)
+    };
   };
 
-  const hasBuyingContext = (node) => {
-    if (!node) return false;
-    const widgetBonus = widgetMatches(node, ['price', 'delivery', 'cheaper', 'button', 'cart', 'buy']);
-    const hasPriceBlock = node.querySelector?.('[data-widget*="Price" i], [data-widget*="price" i]');
-    const hasBuyButton = findAllByText(['в корзину', 'добавить в корзину', 'купить'], node).length > 0;
-    return Boolean(widgetBonus || hasPriceBlock || hasBuyButton);
-  };
+  const target = chooseTarget();
+  if (!target || !target.container || !target.anchor) return;
 
-  let targetDelivery = null;
-  let targetCheaper = null;
-  let targetContainer = null;
-  let bestScore = -1;
-
-  for (const delivery of scopedDelivery) {
-    for (const cheaper of scopedCheaper) {
-      if (!(delivery.compareDocumentPosition(cheaper) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
-      const ancestor = findCommonAncestor(delivery, cheaper);
-      if (!ancestor) continue;
-      const depth = (() => {
-        let d = 0;
-        let node = ancestor;
-        while (node && node !== document.body) {
-          d += 1;
-          node = node.parentElement;
-        }
-        return d;
-      })();
-      const score = depth + (widgetMatches(ancestor, ['delivery', 'cheaper']) ? 5 : 0) + (hasBuyingContext(ancestor) ? 10 : 0);
-      if (score > bestScore) {
-        bestScore = score;
-        targetDelivery = delivery;
-        targetCheaper = cheaper;
-        targetContainer = ancestor;
-      }
+  if (!popup.parentElement || popup.parentElement !== target.container) {
+    if (target.insertBefore) {
+      target.anchor.before(popup);
+    } else {
+      target.anchor.after(popup);
     }
-  }
-
-  if (targetDelivery && targetCheaper && targetContainer) {
-    if (popup.parentElement !== targetContainer || popup.nextElementSibling !== targetCheaper) {
-      targetCheaper.parentElement === targetContainer
-        ? targetContainer.insertBefore(popup, targetCheaper)
-        : targetDelivery.insertAdjacentElement('afterend', popup);
-    }
-    return;
-  }
-
-  const delivery = scopedDelivery.find((node) => node.parentElement && hasBuyingContext(node.parentElement));
-  if (delivery && delivery.parentElement) {
-    const parent = delivery.parentElement;
-    if (popup.parentElement !== parent || popup.previousElementSibling !== delivery) {
-      delivery.insertAdjacentElement('afterend', popup);
-    }
-    return;
-  }
-
-  const cheaper = scopedCheaper.find((node) => node.parentElement && hasBuyingContext(node.parentElement));
-  if (cheaper && cheaper.parentElement) {
-    const parent = cheaper.parentElement;
-    if (popup.parentElement !== parent || popup.nextElementSibling !== cheaper) {
-      parent.insertBefore(popup, cheaper);
-    }
-    return;
-  }
-
-  const fallbackTarget = scopedDelivery[0] || scopedCheaper[0];
-  if (fallbackTarget && fallbackTarget.parentElement) {
-    fallbackTarget.insertAdjacentElement('afterend', popup);
+  } else if (target.insertBefore && popup.nextElementSibling !== target.anchor) {
+    target.anchor.before(popup);
+  } else if (!target.insertBefore && popup.previousElementSibling !== target.anchor) {
+    target.anchor.after(popup);
   }
 };
 

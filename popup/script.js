@@ -54,7 +54,17 @@ const renderMessage = (priceList, message, type = 'error') => {
 const renderResults = (priceList, entries, errors, sku) => {
   priceList.innerHTML = '';
   if (!entries.length) {
-    renderMessage(priceList, 'Не удалось получить цены.', 'error');
+    if (errors?.length) {
+      errors.forEach((err) => {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        const label = MARKETPLACE_LABELS[err.marketplace] || err.marketplace;
+        li.textContent = `${label}: ${err.error || 'Ошибка получения цены'}`;
+        priceList.appendChild(li);
+      });
+    } else {
+      renderMessage(priceList, 'Не удалось получить цены.', 'error');
+    }
     return;
   }
 
@@ -136,7 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await sendRuntimeMessage({ action: 'comparePrices', sku: product.sku });
+      const response = await sendRuntimeMessage({
+        action: 'comparePrices',
+        sku: product.sku,
+        fallbackProduct: {
+          title: product.title,
+          price: product.price,
+          sku: product.sku,
+          marketplace: product.marketplace
+        }
+      });
       if (!response?.success) {
         handleError(response?.error || 'Не удалось получить цены');
         return;

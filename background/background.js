@@ -89,7 +89,7 @@ async function queryAllMarketplaces(sku) {
 }
 
 async function handleComparePrices(message) {
-  const { sku } = message;
+  const { sku, fallbackProduct } = message;
   if (!sku) {
     return { success: false, error: 'SKU is required' };
   }
@@ -101,6 +101,16 @@ async function handleComparePrices(message) {
 
   try {
     const data = await queryAllMarketplaces(sku);
+
+    if (!data.entries.length && fallbackProduct?.price !== undefined) {
+      data.entries.push({
+        title: fallbackProduct.title || '',
+        price: fallbackProduct.price ?? null,
+        sku: fallbackProduct.sku || sku,
+        marketplace: fallbackProduct.marketplace || 'ozon'
+      });
+    }
+
     await writeCache(sku, data);
     return { success: true, cached: false, data };
   } catch (error) {
