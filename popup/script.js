@@ -16,6 +16,8 @@ const formatPrice = (value) => {
   return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(value);
 };
 
+const FALLBACK_IMAGE = chrome.runtime.getURL('icons/icon128.png');
+
 const sendMessageToTab = (tabId, payload) =>
   new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(tabId, payload, (response) => {
@@ -75,32 +77,54 @@ const renderResults = (priceList, entries, errors, query) => {
 
   entries.forEach((entry) => {
     const li = document.createElement('li');
-    li.className = 'result-card';
-
-    const heading = document.createElement('div');
-    heading.className = 'result-header';
-    heading.textContent = MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace;
-
-    const priceEl = document.createElement('div');
-    priceEl.className = 'result-price';
-    priceEl.textContent = formatPrice(entry.price);
+    li.className = 'result-item';
 
     if (bestPrice !== null && entry.price === bestPrice) {
       li.classList.add('best-price');
     }
 
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    const img = document.createElement('img');
+    img.src = entry.image || FALLBACK_IMAGE;
+    img.alt = entry.title || 'Товар';
+    thumb.appendChild(img);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+
+    const heading = document.createElement('div');
+    heading.className = 'result-header';
+    heading.textContent = MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace;
+
+    const title = document.createElement('div');
+    title.className = 'result-title';
+    title.textContent = entry.title || query || 'Предложение';
+
+    const meta = document.createElement('div');
+    meta.className = 'result-meta';
+    meta.textContent = entry.rating ? `⭐ ${entry.rating.toFixed(1)}` : '—';
+
+    info.append(heading, title, meta);
+
+    const priceWrap = document.createElement('div');
+    priceWrap.className = 'actions';
+
+    const priceEl = document.createElement('div');
+    priceEl.className = 'result-price';
+    priceEl.textContent = formatPrice(entry.price);
+
     const link = document.createElement('a');
     const searchParam = entry.title || entry.query || query || entry.sku;
-    link.href = MARKETPLACE_LINKS[entry.marketplace]?.(searchParam || '') || '#';
+    link.href = entry.productUrl || MARKETPLACE_LINKS[entry.marketplace]?.(searchParam || '') || '#';
     link.target = '_blank';
     link.rel = 'noreferrer noopener';
     link.textContent = 'Перейти';
     link.className = 'result-link';
 
-    li.appendChild(heading);
-    li.appendChild(priceEl);
-    li.appendChild(link);
+    priceWrap.append(priceEl, link);
 
+    li.append(thumb, info, priceWrap);
     priceList.appendChild(li);
   });
 };
@@ -145,7 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
           title: product.title,
           price: product.price,
           sku: product.sku,
-          marketplace: product.marketplace
+          marketplace: product.marketplace,
+          image: product.image
         }
       });
       if (!response?.success) {

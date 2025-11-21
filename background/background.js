@@ -7,6 +7,13 @@ const API_ENDPOINTS = {
   'yandex-market': 'https://api.market.yandex.example.com/prices'
 };
 
+const MARKETPLACE_LINKS = {
+  ozon: (query) => `https://www.ozon.ru/search/?text=${encodeURIComponent(query)}`,
+  wildberries: (query) =>
+    `https://www.wildberries.ru/catalog/0/search.aspx?search=${encodeURIComponent(query)}`,
+  'yandex-market': (query) => `https://market.yandex.ru/search?text=${encodeURIComponent(query)}`
+};
+
 const storage = chrome.storage?.local;
 
 const normalizeQuery = (value) => value?.trim().toLowerCase() || null;
@@ -69,7 +76,10 @@ async function fetchMarketplacePrice(marketplace, query, sku) {
     price: payload.price ?? null,
     sku: payload.sku ?? sku ?? query,
     marketplace,
-    query: searchParam
+    query: searchParam,
+    image: payload.image || payload.imageUrl || null,
+    rating: typeof payload.rating === 'number' ? payload.rating : null,
+    productUrl: payload.url || payload.productUrl || MARKETPLACE_LINKS[marketplace]?.(searchParam)
   };
 }
 
@@ -106,7 +116,10 @@ function buildSyntheticEntries(fallbackProduct, query) {
       price: Math.max(1, Math.round(basePrice * discounts[index % discounts.length])),
       sku: fallbackProduct.sku || query,
       marketplace,
-      query: query || fallbackProduct.title || fallbackProduct.sku
+      query: query || fallbackProduct.title || fallbackProduct.sku,
+      image: fallbackProduct.image || null,
+      rating: 4 + (index * 0.2 + Math.random() * 0.2),
+      productUrl: MARKETPLACE_LINKS[marketplace]?.(query || fallbackProduct.title || '')
     }))
     .filter((entry) => entry.price < basePrice);
 }

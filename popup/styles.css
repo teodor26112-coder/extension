@@ -62,22 +62,58 @@ button:hover {
 
 .result-item {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px;
+  grid-template-columns: 72px 1fr auto;
+  gap: 10px;
   align-items: center;
   padding: 10px 12px;
   border: 1px solid #dce1eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.result-item .thumb {
+  width: 72px;
+  height: 72px;
   border-radius: 8px;
-  background: #fdfefe;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.result-item .marketplace {
-  font-weight: 600;
+.result-item .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.result-item .price {
-  color: #2d3748;
+.result-item .info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-item .result-header {
+  font-weight: 700;
+  color: #111827;
+}
+
+.result-item .result-title {
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.result-item .result-meta {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.result-item .result-price {
+  color: #16a34a;
+  font-weight: 800;
+  margin-bottom: 4px;
 }
 
 .result-item.best-price {
@@ -85,11 +121,23 @@ button:hover {
   border-color: #8bd5a8;
 }
 
-.result-item .open-link {
-  background: #10b981;
+.result-item .actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
-.result-item .open-link:hover {
+.result-item .result-link {
+  background: #10b981;
+  padding: 8px 12px;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.result-item .result-link:hover {
   background: #0d946b;
 }
 

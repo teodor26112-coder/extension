@@ -13,6 +13,21 @@ const selectText = (selectors) => {
   return null;
 };
 
+const selectImage = (selectors) => {
+  for (const selector of selectors) {
+    const node = document.querySelector(selector);
+    if (!node) continue;
+
+    if (node.tagName === 'META' && node.getAttribute('content')) {
+      return node.getAttribute('content');
+    }
+
+    const src = node.getAttribute('src') || node.getAttribute('data-src');
+    if (src) return src;
+  }
+  return null;
+};
+
 const normalizePrice = (text) => {
   if (!text) return null;
   const match = text.replace(/\s|\u00A0/g, '').match(/([\d.,]+)/);
@@ -47,6 +62,14 @@ const collectOzonProduct = () => {
     'h1'
   ]);
 
+  const image = selectImage([
+    '[data-widget="webGallery"] img[src]',
+    'div[data-widget="webGallery"] img',
+    'img[itemprop="image"]',
+    'meta[property="og:image"]',
+    'meta[name="og:image"]'
+  ]);
+
   const priceText = selectText([
     '[data-widget="webPrice"] span',
     '[data-widget*="Price"] span',
@@ -67,6 +90,7 @@ const collectOzonProduct = () => {
     title: title || null,
     price: price ?? null,
     sku: sku || null,
+    image: image || null,
     marketplace: 'ozon'
   };
 };
@@ -107,6 +131,13 @@ const MARKETPLACE_LABELS = {
   wildberries: 'Wildberries',
   'yandex-market': 'Яндекс Маркет'
 };
+
+const FALLBACK_IMAGE = chrome.runtime.getURL('icons/icon128.png');
+
+const formatPrice = (value) =>
+  typeof value === 'number'
+    ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(value)
+    : '—';
 
 const createInlinePopup = () => {
   const wrapper = document.createElement('div');
@@ -178,45 +209,102 @@ const buildMarketplaceLink = (marketplace, query) => {
   }
 };
 
+const createHoverCard = (entry, query) => {
+  const container = document.createElement('div');
+  container.style.cssText =
+    'position:absolute; left:100%; top:50%; transform:translate(10px, -50%); background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,0.15); padding:12px; display:none; width:240px; z-index:9999;';
+
+  const title = document.createElement('div');
+  title.textContent = entry.title || query || 'Предложение';
+  title.style.cssText = 'font-weight:700; margin-bottom:6px; color:#111827;';
+
+  const image = document.createElement('img');
+  image.src = entry.image || FALLBACK_IMAGE;
+  image.alt = entry.title || 'Товар';
+  image.style.cssText = 'width:100%; height:150px; object-fit:cover; border-radius:8px; margin-bottom:8px;';
+
+  const price = document.createElement('div');
+  price.textContent = formatPrice(entry.price);
+  price.style.cssText = 'font-size:18px; font-weight:700; color:#16a34a; margin-bottom:4px;';
+
+  const rating = document.createElement('div');
+  rating.textContent = entry.rating ? `⭐ ${entry.rating.toFixed(1)}` : 'Без рейтинга';
+  rating.style.cssText = 'color:#6b7280; margin-bottom:8px;';
+
+  const link = document.createElement('a');
+  link.href = entry.productUrl || buildMarketplaceLink(entry.marketplace, entry.title || query || '');
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'Открыть предложение';
+  link.style.cssText =
+    'display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 12px; background:#2563eb; color:#fff; border-radius:10px; text-decoration:none; font-weight:700;';
+
+  container.append(title, image, price, rating, link);
+  return container;
+};
+
 const renderInlineEntries = (popup, entries, query) => {
   const list = popup.querySelector('.pricehunt-inline-list');
   const status = popup.querySelector('.pricehunt-inline-status');
   if (!list || !status) return;
   list.innerHTML = '';
-  status.textContent = 'Нашли предложения рядом:';
+  status.textContent = 'Выгодные предложения:';
   status.style.color = '#374151';
+  list.style.display = 'flex';
+  list.style.flexDirection = 'row';
+  list.style.gap = '10px';
+  list.style.flexWrap = 'wrap';
 
   entries.forEach((entry) => {
-    const li = document.createElement('li');
-    li.style.cssText =
-      'list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.04);';
+    const card = document.createElement('li');
+    card.style.cssText =
+      'position:relative; list-style:none; width:110px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(15,23,42,0.08); cursor:pointer;';
 
-    const textWrap = document.createElement('div');
-    textWrap.style.cssText = 'display:flex; flex-direction:column; gap:2px; max-width:65%;';
+    const imageWrap = document.createElement('div');
+    imageWrap.style.cssText = 'width:100%; height:90px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;';
 
-    const label = document.createElement('div');
-    label.textContent = MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace;
-    label.style.cssText = 'font-weight:600; color:#111827;';
+    const img = document.createElement('img');
+    img.src = entry.image || FALLBACK_IMAGE;
+    img.alt = entry.title || 'Товар';
+    img.style.cssText = 'width:100%; height:100%; object-fit:cover;';
+    imageWrap.appendChild(img);
+
+    const body = document.createElement('div');
+    body.style.cssText = 'padding:8px; display:flex; flex-direction:column; gap:4px;';
+
+    const marketplaceLabel = document.createElement('div');
+    marketplaceLabel.textContent = MARKETPLACE_LABELS[entry.marketplace] || entry.marketplace;
+    marketplaceLabel.style.cssText = 'font-weight:700; font-size:12px; color:#111827;';
 
     const price = document.createElement('div');
-    price.textContent =
-      typeof entry.price === 'number'
-        ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(entry.price)
-        : '—';
-    price.style.cssText = 'color:#16a34a; font-weight:600;';
+    price.textContent = formatPrice(entry.price);
+    price.style.cssText = 'font-weight:800; color:#16a34a; font-size:14px;';
 
-    textWrap.append(label, price);
+    const rating = document.createElement('div');
+    rating.textContent = entry.rating ? `⭐ ${entry.rating.toFixed(1)}` : '—';
+    rating.style.cssText = 'color:#6b7280; font-size:12px;';
 
-    const link = document.createElement('a');
-    link.href = buildMarketplaceLink(entry.marketplace, entry.title || query || '');
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'Перейти';
-    link.style.cssText =
-      'padding:8px 12px; background:#2563eb; color:#fff; border-radius:8px; text-decoration:none; font-weight:600; white-space:nowrap;';
+    body.append(marketplaceLabel, price, rating);
 
-    li.append(textWrap, link);
-    list.appendChild(li);
+    const hoverCard = createHoverCard(entry, query);
+    card.append(imageWrap, body, hoverCard);
+
+    const openLink = () => {
+      const href = entry.productUrl || buildMarketplaceLink(entry.marketplace, entry.title || query || '');
+      if (href && href !== '#') {
+        window.open(href, '_blank', 'noopener');
+      }
+    };
+
+    card.addEventListener('click', openLink);
+    card.addEventListener('mouseenter', () => {
+      hoverCard.style.display = 'block';
+    });
+    card.addEventListener('mouseleave', () => {
+      hoverCard.style.display = 'none';
+    });
+
+    list.appendChild(card);
   });
 };
 
