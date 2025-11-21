@@ -319,7 +319,9 @@ const insertInlinePopup = () => {
     .flat()
     .filter(isVisible);
 
-  const priceTextBlocks = findAllByText(['₽', 'цена', 'руб.']).filter(isVisible);
+  const priceTextBlocks = priceBlocks.length
+    ? []
+    : findAllByText(['₽', 'цена', 'руб.']).filter(isVisible);
 
   const targetPrice = priceBlocks[0] || priceTextBlocks[0];
   if (!targetPrice) return;
@@ -359,7 +361,17 @@ const insertInlinePopup = () => {
   fetchInlinePrices(popup);
 };
 
-const observer = new MutationObserver(() => insertInlinePopup());
+let scheduled = false;
+const scheduleInlineInsertion = () => {
+  if (scheduled) return;
+  scheduled = true;
+  setTimeout(() => {
+    scheduled = false;
+    insertInlinePopup();
+  }, 200);
+};
+
+const observer = new MutationObserver(() => scheduleInlineInsertion());
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
