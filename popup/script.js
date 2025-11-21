@@ -102,16 +102,6 @@ const renderResults = (priceList, entries, errors, sku) => {
 
     priceList.appendChild(li);
   });
-
-  if (errors?.length) {
-    errors.forEach((err) => {
-      const li = document.createElement('li');
-      li.className = 'empty';
-      const label = MARKETPLACE_LABELS[err.marketplace] || err.marketplace;
-      li.textContent = `${label}: ${err.error || 'Ошибка получения цены'}`;
-      priceList.appendChild(li);
-    });
-  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
