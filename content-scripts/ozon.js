@@ -118,7 +118,9 @@ const createInlinePopup = () => {
     'border-radius:8px',
     'background:#f7f9fb',
     'color:#1f1f1f',
-    'font:14px/1.4 "Inter", system-ui, -apple-system, sans-serif'
+    'font:14px/1.4 "Inter", system-ui, -apple-system, sans-serif',
+    'width:100%',
+    'box-sizing:border-box'
   ].join(';');
   const icon = document.createElement('span');
   icon.textContent = '🔎';
@@ -184,35 +186,84 @@ const insertInlinePopup = () => {
   const existing = document.getElementById(INLINE_POPUP_ID);
   const popup = existing || createInlinePopup();
 
-  const containerSelectors = [
-    '[data-widget*="delivery" i]',
-    '[data-widget*="Delivery" i]',
-    '[data-widget*="Cheaper" i]',
-    '[data-widget*="cheaper" i]',
-    '[data-widget]'
-  ];
+  const widgetMatches = (node, keywords) =>
+    keywords.some((kw) => node?.getAttribute?.('data-widget')?.toLowerCase()?.includes(kw));
 
-  for (const cheaper of cheaperBlocks) {
-    const container =
-      findNearestAncestor(cheaper, containerSelectors) || cheaper.closest('[data-widget], section, article, div');
-    if (!container) continue;
+  const filterByWidgetAndText = (nodes, widgetKeywords) =>
+    nodes
+      .map((node) => ({
+        node,
+        hasWidget: widgetMatches(node, widgetKeywords),
+        depth: (() => {
+          let depth = 0;
+          let current = node;
+          while (current && current !== document.body) {
+            depth += 1;
+            current = current.parentElement;
+          }
+          return depth;
+        })()
+      }))
+      .sort((a, b) => Number(b.hasWidget) - Number(a.hasWidget) || b.depth - a.depth)
+      .map((item) => item.node);
 
-    const scopedDelivery = findAllByText(
-      ['доставим сегодня', 'доставим завтра', 'доставим', 'доставка'],
-      container
-    );
+  const scopedDelivery = filterByWidgetAndText(deliveryBlocks, ['delivery']);
+  const scopedCheaper = filterByWidgetAndText(cheaperBlocks, ['cheaper']);
 
-    const delivery = scopedDelivery.find((node) => container.contains(node));
+  const findCommonAncestor = (a, b) => {
+    const ancestors = new Set();
+    let current = a;
+    while (current) {
+      ancestors.add(current);
+      current = current.parentElement;
+    }
+    current = b;
+    while (current) {
+      if (ancestors.has(current)) return current;
+      current = current.parentElement;
+    }
+    return null;
+  };
 
-    if (delivery && delivery.compareDocumentPosition(cheaper) & Node.DOCUMENT_POSITION_FOLLOWING) {
-      if (popup.parentElement !== container || popup.previousElementSibling !== delivery) {
-        delivery.insertAdjacentElement('afterend', popup);
+  let targetDelivery = null;
+  let targetCheaper = null;
+  let targetContainer = null;
+  let bestScore = -1;
+
+  for (const delivery of scopedDelivery) {
+    for (const cheaper of scopedCheaper) {
+      if (!(delivery.compareDocumentPosition(cheaper) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+      const ancestor = findCommonAncestor(delivery, cheaper);
+      if (!ancestor) continue;
+      const depth = (() => {
+        let d = 0;
+        let node = ancestor;
+        while (node && node !== document.body) {
+          d += 1;
+          node = node.parentElement;
+        }
+        return d;
+      })();
+      const score = depth + (widgetMatches(ancestor, ['delivery', 'cheaper']) ? 5 : 0);
+      if (score > bestScore) {
+        bestScore = score;
+        targetDelivery = delivery;
+        targetCheaper = cheaper;
+        targetContainer = ancestor;
       }
-      return;
     }
   }
 
-  const delivery = deliveryBlocks.find((node) => node.parentElement);
+  if (targetDelivery && targetCheaper && targetContainer) {
+    if (popup.parentElement !== targetContainer || popup.nextElementSibling !== targetCheaper) {
+      targetCheaper.parentElement === targetContainer
+        ? targetContainer.insertBefore(popup, targetCheaper)
+        : targetDelivery.insertAdjacentElement('afterend', popup);
+    }
+    return;
+  }
+
+  const delivery = scopedDelivery.find((node) => node.parentElement);
   if (delivery && delivery.parentElement) {
     const parent = delivery.parentElement;
     if (popup.parentElement !== parent || popup.previousElementSibling !== delivery) {
@@ -221,7 +272,7 @@ const insertInlinePopup = () => {
     return;
   }
 
-  const cheaper = cheaperBlocks.find((node) => node.parentElement);
+  const cheaper = scopedCheaper.find((node) => node.parentElement);
   if (cheaper && cheaper.parentElement) {
     const parent = cheaper.parentElement;
     if (popup.parentElement !== parent || popup.nextElementSibling !== cheaper) {
