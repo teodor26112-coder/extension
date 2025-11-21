@@ -180,101 +180,53 @@ const isVisible = (node) => {
   return rect.width > 0 && rect.height > 0;
 };
 
-const nearestCommonAncestor = (a, b) => {
-  if (!a) return b?.parentElement || null;
-  if (!b) return a.parentElement || null;
-  const ancestors = new Set();
-  let current = a;
-  while (current && current !== document.body) {
-    ancestors.add(current);
-    current = current.parentElement;
-  }
-  current = b;
-  while (current && current !== document.body) {
-    if (ancestors.has(current)) return current;
-    current = current.parentElement;
-  }
-  return document.body;
-};
-
 const insertInlinePopup = () => {
-  const deliveryBlocks = findAllByText(['доставим', 'доставка']).filter(isVisible);
-  const cheaperBlocks = findAllByText(['есть дешевле', 'нашли дешевле']).filter(isVisible);
+  const priceBlocks = [
+    '[data-widget="webPrice"]',
+    '[data-widget="webPriceMain"]',
+    '[data-widget*="Price"]',
+    'section[data-widget*="Price"]',
+    'div[data-widget*="Price"]'
+  ]
+    .map((selector) => Array.from(document.querySelectorAll(selector)))
+    .flat()
+    .filter(isVisible);
 
-  if (!deliveryBlocks.length && !cheaperBlocks.length) return;
+  const priceTextBlocks = findAllByText(['₽', 'цена', 'руб.']).filter(isVisible);
+
+  const targetPrice = priceBlocks[0] || priceTextBlocks[0];
+  if (!targetPrice) return;
+
+  const columnContainer =
+    findNearestAncestor(targetPrice, [
+      '[data-widget*="StickyOffer"]',
+      '[data-widget*="BuyBox"]',
+      '[class*="sale-column"]',
+      'aside',
+      'section[data-widget]',
+      'div[data-widget]'
+    ]) || targetPrice.parentElement;
+
+  if (!columnContainer) return;
 
   const existing = document.getElementById(INLINE_POPUP_ID);
   const popup = existing || createInlinePopup();
 
-  const chooseTarget = () => {
-    let best = null;
+  const insertAfterPrice = () => {
+    const anchor = targetPrice.closest('[data-widget*="Price"], section, div') || targetPrice;
+    if (!anchor || !anchor.parentElement) return;
 
-    for (const cheaper of cheaperBlocks) {
-      const cheaperRect = cheaper.getBoundingClientRect();
-      for (const delivery of deliveryBlocks) {
-        const deliveryRect = delivery.getBoundingClientRect();
-        if (cheaperRect.top <= deliveryRect.top) continue;
-        const distance = Math.abs(cheaperRect.top - deliveryRect.bottom);
-        const common = nearestCommonAncestor(cheaper, delivery);
-        const prefersSidebar = common?.closest?.('[data-widget], aside, section');
-
-        const score = distance + (prefersSidebar ? 0 : 2000);
-
-        if (!best || score < best.score) {
-          best = {
-            score,
-            cheaper,
-            delivery,
-            container: common
-          };
-        }
-      }
+    if (anchor.nextElementSibling === popup && popup.parentElement === anchor.parentElement) {
+      return;
     }
 
-    if (!best && cheaperBlocks.length) {
-      const cheaper = cheaperBlocks[0];
-      return {
-        anchor: cheaper,
-        container: cheaper.parentElement || document.body,
-        insertBefore: true
-      };
-    }
-
-    if (!best && deliveryBlocks.length) {
-      const delivery = deliveryBlocks[0];
-      return {
-        anchor: delivery,
-        container: delivery.parentElement || document.body,
-        insertBefore: false
-      };
-    }
-
-    if (!best) return null;
-
-    const { cheaper, delivery, container } = best;
-    const sameParent = cheaper.parentElement === delivery.parentElement;
-    const targetContainer = sameParent ? cheaper.parentElement : container || document.body;
-
-    return {
-      anchor: cheaper,
-      container: targetContainer,
-      insertBefore: true
-    };
+    anchor.after(popup);
   };
 
-  const target = chooseTarget();
-  if (!target || !target.container || !target.anchor) return;
-
-  if (!popup.parentElement || popup.parentElement !== target.container) {
-    if (target.insertBefore) {
-      target.anchor.before(popup);
-    } else {
-      target.anchor.after(popup);
-    }
-  } else if (target.insertBefore && popup.nextElementSibling !== target.anchor) {
-    target.anchor.before(popup);
-  } else if (!target.insertBefore && popup.previousElementSibling !== target.anchor) {
-    target.anchor.after(popup);
+  if (!popup.parentElement || popup.parentElement !== columnContainer) {
+    insertAfterPrice();
+  } else {
+    insertAfterPrice();
   }
 };
 
