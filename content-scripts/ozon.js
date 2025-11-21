@@ -174,9 +174,32 @@ const findNearestAncestor = (node, selectors = []) => {
   return null;
 };
 
+const isVisible = (node) => {
+  if (!node || !(node instanceof Element)) return false;
+  const rect = node.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+};
+
+const nearestCommonAncestor = (a, b) => {
+  if (!a) return b?.parentElement || null;
+  if (!b) return a.parentElement || null;
+  const ancestors = new Set();
+  let current = a;
+  while (current && current !== document.body) {
+    ancestors.add(current);
+    current = current.parentElement;
+  }
+  current = b;
+  while (current && current !== document.body) {
+    if (ancestors.has(current)) return current;
+    current = current.parentElement;
+  }
+  return document.body;
+};
+
 const insertInlinePopup = () => {
-  const deliveryBlocks = findAllByText(['доставим', 'доставка']) || [];
-  const cheaperBlocks = findAllByText(['есть дешевле', 'нашли дешевле']) || [];
+  const deliveryBlocks = findAllByText(['доставим', 'доставка']).filter(isVisible);
+  const cheaperBlocks = findAllByText(['есть дешевле', 'нашли дешевле']).filter(isVisible);
 
   if (!deliveryBlocks.length && !cheaperBlocks.length) return;
 
@@ -184,39 +207,58 @@ const insertInlinePopup = () => {
   const popup = existing || createInlinePopup();
 
   const chooseTarget = () => {
-    const preferWidget = (nodes, keyword) =>
-      nodes.sort((a, b) => {
-        const aMatch = a.getAttribute?.('data-widget')?.toLowerCase()?.includes(keyword) ? 1 : 0;
-        const bMatch = b.getAttribute?.('data-widget')?.toLowerCase()?.includes(keyword) ? 1 : 0;
-        if (aMatch !== bMatch) return bMatch - aMatch;
-        return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-      });
+    let best = null;
 
-    const prioritizedCheaper = preferWidget([...cheaperBlocks], 'cheaper');
-    const prioritizedDelivery = preferWidget([...deliveryBlocks], 'delivery');
+    for (const cheaper of cheaperBlocks) {
+      const cheaperRect = cheaper.getBoundingClientRect();
+      for (const delivery of deliveryBlocks) {
+        const deliveryRect = delivery.getBoundingClientRect();
+        if (cheaperRect.top <= deliveryRect.top) continue;
+        const distance = Math.abs(cheaperRect.top - deliveryRect.bottom);
+        const common = nearestCommonAncestor(cheaper, delivery);
+        const prefersSidebar = common?.closest?.('[data-widget], aside, section');
 
-    const cheaperNode = prioritizedCheaper[0] || null;
-    const deliveryNode = prioritizedDelivery.find((node) =>
-      cheaperNode
-        ? node.compareDocumentPosition(cheaperNode) & Node.DOCUMENT_POSITION_FOLLOWING
-        : true
-    );
+        const score = distance + (prefersSidebar ? 0 : 2000);
 
-    if (!cheaperNode && !deliveryNode) return null;
-
-    const anchor = cheaperNode || deliveryNode;
-    let ancestor = anchor?.parentElement;
-    while (ancestor && ancestor !== document.body) {
-      const containsDelivery = deliveryNode ? ancestor.contains(deliveryNode) : true;
-      const containsCheaper = cheaperNode ? ancestor.contains(cheaperNode) : true;
-      if (containsDelivery && containsCheaper) break;
-      ancestor = ancestor.parentElement;
+        if (!best || score < best.score) {
+          best = {
+            score,
+            cheaper,
+            delivery,
+            container: common
+          };
+        }
+      }
     }
 
+    if (!best && cheaperBlocks.length) {
+      const cheaper = cheaperBlocks[0];
+      return {
+        anchor: cheaper,
+        container: cheaper.parentElement || document.body,
+        insertBefore: true
+      };
+    }
+
+    if (!best && deliveryBlocks.length) {
+      const delivery = deliveryBlocks[0];
+      return {
+        anchor: delivery,
+        container: delivery.parentElement || document.body,
+        insertBefore: false
+      };
+    }
+
+    if (!best) return null;
+
+    const { cheaper, delivery, container } = best;
+    const sameParent = cheaper.parentElement === delivery.parentElement;
+    const targetContainer = sameParent ? cheaper.parentElement : container || document.body;
+
     return {
-      anchor,
-      container: ancestor || anchor?.parentElement || document.body,
-      insertBefore: Boolean(cheaperNode)
+      anchor: cheaper,
+      container: targetContainer,
+      insertBefore: true
     };
   };
 
