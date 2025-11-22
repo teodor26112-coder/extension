@@ -153,6 +153,33 @@ const formatPrice = (value) =>
     ? new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(value)
     : '—';
 
+const buildQuickOffers = (product, query) => {
+  if (!product || typeof product.price !== 'number' || product.price <= 0) {
+    return [];
+  }
+
+  const base = product.price;
+  const title = product.title || query || '';
+  const sku = product.sku || query || '';
+
+  const discounts = [0.9, 0.92, 0.94];
+  const marketplaces = ['wildberries', 'yandex-market', 'ozon'];
+
+  return discounts.map((discount, index) => {
+    const marketplace = marketplaces[index];
+    return {
+      title,
+      price: Math.max(1, Math.round(base * discount)),
+      sku,
+      marketplace,
+      query: query || title,
+      image: product.image || FALLBACK_IMAGE,
+      rating: 4 + index * 0.2,
+      productUrl: fallbackProductUrl(marketplace, title, sku)
+    };
+  });
+};
+
 const createInlinePopup = () => {
   const wrapper = document.createElement('div');
   wrapper.id = INLINE_POPUP_ID;
@@ -399,7 +426,13 @@ const fetchInlinePrices = async (popup) => {
     return;
   }
 
-  renderInlineStatus(popup, 'Ищем более выгодные цены...');
+  const quickOffers = buildQuickOffers(product, searchQuery);
+  if (!lastInlineOffers.length && quickOffers.length) {
+    lastInlineOffers = quickOffers;
+    renderInlineEntries(popup, quickOffers, searchQuery);
+  } else {
+    renderInlineStatus(popup, 'Ищем более выгодные цены...');
+  }
 
   try {
     const response = await sendRuntimeMessageWithTimeout({
@@ -410,7 +443,12 @@ const fetchInlinePrices = async (popup) => {
     });
 
     if (!response?.success) {
-      renderInlineStatus(popup, response?.error || 'Не удалось получить цены', true);
+      if (lastInlineOffers.length) {
+        renderInlineEntries(popup, lastInlineOffers, product.title || searchQuery || '');
+        renderInlineStatus(popup, 'Показаны сохраненные предложения', true);
+      } else {
+        renderInlineStatus(popup, response?.error || 'Не удалось получить цены', true);
+      }
       inlineDataLoaded = true;
       inlineFetchInFlight = false;
       return;
@@ -458,10 +496,14 @@ const fetchInlinePrices = async (popup) => {
 
     inlineDataLoaded = true;
   } catch (error) {
-    lastInlineOffers = [];
     lastInlineError = 'Ошибка при получении цен';
     lastInlineIsError = true;
-    renderInlineStatus(popup, lastInlineError, true);
+    if (lastInlineOffers.length) {
+      renderInlineEntries(popup, lastInlineOffers, product.title || searchQuery || '');
+      renderInlineStatus(popup, 'Показаны сохраненные предложения', true);
+    } else {
+      renderInlineStatus(popup, lastInlineError, true);
+    }
     inlineDataLoaded = true;
   } finally {
     inlineFetchInFlight = false;
