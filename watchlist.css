@@ -1,0 +1,184 @@
+h1, h2 {
+    margin: 0px;
+}
+
+h1 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+h1 > img {
+    height: 1em;
+    width: 1em;
+}
+
+.info {
+    font-size: 1.2em;
+    text-align: center;
+}
+
+#no-data {
+    font-size: 1.5em;
+    text-align: center;
+    max-width: 800px;
+}
+
+#has-data {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+#watch-icon {
+    height: 1em;
+    width: 1em;
+    border: 1px solid #999999;
+    padding: 2px;
+    border-radius: 2px;
+    margin: 0px 2px;
+    vertical-align: middle;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+table {
+    margin: auto;
+    border-collapse: collapse;
+}
+
+.color-schema {
+    display: flex;
+    align-items: center;
+}
+
+.color-box {
+    display: inline-block;
+    border: 1px solid #999999;
+    margin-right: 4px;
+    margin-left: 12px;
+    padding: 2px 4px;
+    vertical-align: middle;
+}
+
+.disabled {
+    background: #eeeeee;
+}
+
+.error {
+    background: #ffeeee;
+}
+
+.alarmed {
+    background: #eeffee;
+}
+
+.refreshing {
+    background: #ffffcc;
+}
+
+th, td {
+    border: 1px solid #cccccc;
+    padding: 4px;
+    text-align: center;
+}
+
+td.left {
+    text-align: left;
+    max-width: 500px;
+}
+
+td.wider {
+    padding: 4px 12px;
+}
+
+td .subtext {
+    font-size: 0.8em;
+    font-style: italic;
+}
+
+td.card-image {
+    height: 64px;
+    width: 64px;
+}
+
+td.card-image > img {
+    height: 64px;
+    max-width: 64px;
+    width: auto;
+    display: block;
+}
+
+td button img {
+    height: 16px;
+    width: 16px;
+}
+
+.controls {
+    display: flex;
+    width: 100%;
+    align-items: end;
+    justify-content: end;
+    gap: 12px;
+}
+
+.lower-price {
+    color: #009900;
+}
+
+.higher-price {
+    color: #990000;
+}
+
+.price-range {
+    text-decoration: 1px underline dotted;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.price-history {
+    position: absolute;
+    padding: 10px;
+    border: 1px solid black;
+    background: black;
+    border-radius: 10px;
+    color: white;
+}
+
+.price-history-title {
+    text-align: center;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+}
+
+.price-history-title > h2 {
+    flex: 1;
+}
+.price-history-title > .close-price-history-button {
+    font-size: 16px;
+    cursor: pointer;
+    align-self: center;
+}
+
+.price-history-description {
+    font-size: 1.2em;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.alert-price {
+    font-size: 1em;
+    max-width: 100px;
+}
+
+.price-history > canvas {
+    width: 800px;
+    height: 400px;
+}
