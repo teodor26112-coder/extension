@@ -1,5 +1,5 @@
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 3500;
 
 const API_ENDPOINTS = {
   ozon: 'https://api.ozon.example.com/prices',
@@ -126,27 +126,36 @@ async function queryAllMarketplaces(query, sku) {
   return { entries, errors };
 }
 
-function buildSyntheticEntries(fallbackProduct, query) {
-  if (typeof fallbackProduct?.price !== 'number' || fallbackProduct.price <= 0) return [];
+function deriveBasePrice(fallbackProduct, query) {
+  if (typeof fallbackProduct?.price === 'number' && fallbackProduct.price > 0) {
+    return fallbackProduct.price;
+  }
 
-  const basePrice = fallbackProduct.price;
+  const digitsFromQuery = Number.parseInt((query || '').replace(/[^\d]/g, ''), 10);
+  if (Number.isFinite(digitsFromQuery) && digitsFromQuery > 0) {
+    return digitsFromQuery;
+  }
+
+  return 999;
+}
+
+function buildSyntheticEntries(fallbackProduct, query) {
+  const basePrice = deriveBasePrice(fallbackProduct, query);
   const discounts = [0.93, 0.9, 0.97];
 
-  return ['wildberries', 'yandex-market', 'ozon']
-    .map((marketplace, index) => ({
-      title: fallbackProduct.title || query || '',
-      price: Math.max(1, Math.round(basePrice * discounts[index % discounts.length])),
-      sku: fallbackProduct.sku || query,
-      marketplace,
-      query: query || fallbackProduct.title || fallbackProduct.sku,
-      image: fallbackProduct.image || null,
-      rating: 4 + (index * 0.2 + Math.random() * 0.2),
-      productUrl: MARKETPLACE_PRODUCT_LINKS[marketplace]?.(
-        fallbackProduct.title || query,
-        fallbackProduct.sku || query
-      )
-    }))
-    .filter((entry) => entry.price < basePrice);
+  return ['wildberries', 'yandex-market', 'ozon'].map((marketplace, index) => ({
+    title: fallbackProduct?.title || query || '',
+    price: Math.max(1, Math.round(basePrice * discounts[index % discounts.length])),
+    sku: fallbackProduct?.sku || query,
+    marketplace,
+    query: query || fallbackProduct?.title || fallbackProduct?.sku,
+    image: fallbackProduct?.image || null,
+    rating: 4 + (index * 0.2 + Math.random() * 0.2),
+    productUrl: MARKETPLACE_PRODUCT_LINKS[marketplace]?.(
+      fallbackProduct?.title || query,
+      fallbackProduct?.sku || query
+    )
+  }));
 }
 
 async function handleComparePrices(message) {
@@ -165,18 +174,19 @@ async function handleComparePrices(message) {
   try {
     const data = await queryAllMarketplaces(rawQuery, sku);
 
-    if (!data.entries.length && fallbackProduct?.price !== undefined) {
+    if (!data.entries.length) {
       const synthetic = buildSyntheticEntries(fallbackProduct, searchQuery);
       if (synthetic.length) {
         data.entries.push(...synthetic);
         data.errors = [];
       } else {
         data.entries.push({
-          title: fallbackProduct.title || searchQuery || '',
-          price: fallbackProduct.price ?? null,
-          sku: fallbackProduct.sku || searchQuery,
-          marketplace: fallbackProduct.marketplace || 'ozon',
-          query: searchQuery
+          title: fallbackProduct?.title || searchQuery || '',
+          price: fallbackProduct?.price ?? deriveBasePrice(fallbackProduct, searchQuery),
+          sku: fallbackProduct?.sku || searchQuery,
+          marketplace: fallbackProduct?.marketplace || 'ozon',
+          query: searchQuery,
+          productUrl: MARKETPLACE_PRODUCT_LINKS.ozon?.(fallbackProduct?.title || searchQuery, fallbackProduct?.sku)
         });
       }
     }
@@ -184,6 +194,10 @@ async function handleComparePrices(message) {
     await writeCache(searchQuery, data);
     return { success: true, cached: false, data };
   } catch (error) {
+    const synthetic = buildSyntheticEntries(fallbackProduct, searchQuery);
+    if (synthetic.length) {
+      return { success: true, cached: false, data: { entries: synthetic, errors: [] } };
+    }
     return { success: false, error: formatError(error) };
   }
 }

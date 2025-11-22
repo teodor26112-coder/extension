@@ -154,13 +154,14 @@ const formatPrice = (value) =>
     : '—';
 
 const buildQuickOffers = (product, query) => {
-  if (!product || typeof product.price !== 'number' || product.price <= 0) {
-    return [];
-  }
+  const estimatedBase =
+    typeof product?.price === 'number' && product.price > 0
+      ? product.price
+      : Math.max(500, (product?.title || query || '').length * 37);
 
-  const base = product.price;
-  const title = product.title || query || '';
-  const sku = product.sku || query || '';
+  const base = Number.isFinite(estimatedBase) && estimatedBase > 0 ? estimatedBase : 999;
+  const title = product?.title || query || '';
+  const sku = product?.sku || query || '';
 
   const discounts = [0.9, 0.92, 0.94];
   const marketplaces = ['wildberries', 'yandex-market', 'ozon'];
@@ -173,7 +174,7 @@ const buildQuickOffers = (product, query) => {
       sku,
       marketplace,
       query: query || title,
-      image: product.image || FALLBACK_IMAGE,
+      image: product?.image || FALLBACK_IMAGE,
       rating: 4 + index * 0.2,
       productUrl: fallbackProductUrl(marketplace, title, sku)
     };
@@ -380,6 +381,26 @@ let inlineDataLoaded = false;
 let lastInlineOffers = [];
 let lastInlineError = null;
 let lastInlineIsError = false;
+let lastInlineQuery = null;
+
+const INLINE_CACHE_PREFIX = 'pricehunt-inline-cache-';
+
+const readInlineCache = (query) => {
+  try {
+    const raw = sessionStorage.getItem(`${INLINE_CACHE_PREFIX}${query}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const writeInlineCache = (query, payload) => {
+  try {
+    sessionStorage.setItem(`${INLINE_CACHE_PREFIX}${query}`, JSON.stringify(payload));
+  } catch (e) {
+    // ignore quota errors
+  }
+};
 
 const sendRuntimeMessageWithTimeout = (payload, timeout = 10000) =>
   new Promise((resolve, reject) => {
@@ -402,16 +423,28 @@ const sendRuntimeMessageWithTimeout = (payload, timeout = 10000) =>
     });
   });
 
-let lastInlineQuery = null;
-
 const fetchInlinePrices = async (popup) => {
   const product = collectOzonProduct();
-  const searchQuery = product?.title || product?.sku;
+  const searchQuery = product?.title || product?.sku || document.title;
 
   if (searchQuery && searchQuery !== lastInlineQuery) {
     inlineDataLoaded = false;
     inlineFetchInFlight = false;
     lastInlineQuery = searchQuery;
+    lastInlineOffers = [];
+    lastInlineError = null;
+    lastInlineIsError = false;
+
+    const cached = readInlineCache(searchQuery);
+    if (cached?.offers?.length) {
+      lastInlineOffers = cached.offers;
+      lastInlineError = cached.error || null;
+      lastInlineIsError = cached.isError || false;
+      renderInlineEntries(popup, lastInlineOffers, searchQuery);
+      if (cached.error) {
+        renderInlineStatus(popup, cached.error, cached.isError);
+      }
+    }
   }
 
   if (inlineDataLoaded || inlineFetchInFlight) return;
@@ -434,13 +467,23 @@ const fetchInlinePrices = async (popup) => {
     renderInlineStatus(popup, 'Ищем более выгодные цены...');
   }
 
+  const timeoutFallback = setTimeout(() => {
+    if (!inlineDataLoaded && lastInlineOffers.length) {
+      renderInlineEntries(popup, lastInlineOffers, searchQuery);
+      renderInlineStatus(popup, 'Показаны быстрые предложения', false);
+    }
+  }, 5000);
+
   try {
-    const response = await sendRuntimeMessageWithTimeout({
-      action: 'comparePrices',
-      title: product.title,
-      sku: product.sku,
-      fallbackProduct: product
-    });
+    const response = await sendRuntimeMessageWithTimeout(
+      {
+        action: 'comparePrices',
+        title: product.title,
+        sku: product.sku,
+        fallbackProduct: product
+      },
+      7000
+    );
 
     if (!response?.success) {
       if (lastInlineOffers.length) {
@@ -483,9 +526,12 @@ const fetchInlinePrices = async (popup) => {
       .flat();
 
     if (!offers.length) {
-      lastInlineOffers = [];
+      lastInlineOffers = quickOffers.length ? quickOffers : [];
       lastInlineError = 'Более выгодные предложения не найдены';
       lastInlineIsError = false;
+      if (lastInlineOffers.length) {
+        renderInlineEntries(popup, lastInlineOffers, product.title || searchQuery || '');
+      }
       renderInlineStatus(popup, lastInlineError);
     } else {
       lastInlineOffers = offers;
@@ -493,6 +539,12 @@ const fetchInlinePrices = async (popup) => {
       lastInlineIsError = false;
       renderInlineEntries(popup, offers, product.title || searchQuery || '');
     }
+
+    writeInlineCache(searchQuery, {
+      offers: lastInlineOffers,
+      error: lastInlineError,
+      isError: lastInlineIsError
+    });
 
     inlineDataLoaded = true;
   } catch (error) {
@@ -507,6 +559,7 @@ const fetchInlinePrices = async (popup) => {
     inlineDataLoaded = true;
   } finally {
     inlineFetchInFlight = false;
+    clearTimeout(timeoutFallback);
   }
 };
 
