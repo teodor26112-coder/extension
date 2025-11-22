@@ -350,6 +350,9 @@ const renderInlineEntries = (popup, entries, query) => {
 
 let inlineFetchInFlight = false;
 let inlineDataLoaded = false;
+let lastInlineOffers = [];
+let lastInlineError = null;
+let lastInlineIsError = false;
 
 const sendRuntimeMessageWithTimeout = (payload, timeout = 10000) =>
   new Promise((resolve, reject) => {
@@ -389,6 +392,9 @@ const fetchInlinePrices = async (popup) => {
 
   if (!searchQuery) {
     renderInlineStatus(popup, 'Не удалось определить товар', true);
+    lastInlineError = 'Не удалось определить товар';
+    lastInlineIsError = true;
+    lastInlineOffers = [];
     inlineFetchInFlight = false;
     return;
   }
@@ -439,17 +445,43 @@ const fetchInlinePrices = async (popup) => {
       .flat();
 
     if (!offers.length) {
-      renderInlineStatus(popup, 'Более выгодные предложения не найдены');
+      lastInlineOffers = [];
+      lastInlineError = 'Более выгодные предложения не найдены';
+      lastInlineIsError = false;
+      renderInlineStatus(popup, lastInlineError);
     } else {
+      lastInlineOffers = offers;
+      lastInlineError = null;
+      lastInlineIsError = false;
       renderInlineEntries(popup, offers, product.title || searchQuery || '');
     }
 
     inlineDataLoaded = true;
   } catch (error) {
-    renderInlineStatus(popup, 'Ошибка при получении цен', true);
+    lastInlineOffers = [];
+    lastInlineError = 'Ошибка при получении цен';
+    lastInlineIsError = true;
+    renderInlineStatus(popup, lastInlineError, true);
     inlineDataLoaded = true;
   } finally {
     inlineFetchInFlight = false;
+  }
+};
+
+const restoreInlineView = (popup) => {
+  if (!popup) return;
+  if (lastInlineOffers.length) {
+    renderInlineEntries(popup, lastInlineOffers, lastInlineQuery || '');
+    return;
+  }
+
+  if (lastInlineError) {
+    renderInlineStatus(popup, lastInlineError, lastInlineIsError);
+    return;
+  }
+
+  if (inlineDataLoaded) {
+    renderInlineStatus(popup, 'Более выгодные предложения не найдены');
   }
 };
 
@@ -537,6 +569,7 @@ const insertInlinePopup = () => {
 
   const existing = document.getElementById(INLINE_POPUP_ID);
   const popup = existing || createInlinePopup();
+  const isNewPopup = !existing;
 
   const insertAfterPrice = () => {
     const anchor = targetPrice.closest('[data-widget*="Price"], section, div') || targetPrice;
@@ -553,6 +586,10 @@ const insertInlinePopup = () => {
     insertAfterPrice();
   } else {
     insertAfterPrice();
+  }
+
+  if (isNewPopup) {
+    restoreInlineView(popup);
   }
 
   fetchInlinePrices(popup);
