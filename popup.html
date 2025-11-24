@@ -1,0 +1,133 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="popup.css">
+    <script src="config.js"></script>
+    <script src="logger.js"></script>
+    <script src="shopper-server.js"></script>
+    <script src="marketplaces/common.js"></script>
+    <script src="marketplaces/wb.js"></script>
+    <script src="marketplaces/oz.js"></script>
+    <script src="marketplaces/ym.js"></script>
+    <script src="marketplaces/mm.js"></script>
+    <script src="marketplaces/pt.js"></script>
+    <script src="marketplaces/dm.js"></script>
+    <script src="marketplaces/vi.js"></script>
+    <script src="marketplaces/lm.js"></script>
+    <script src="marketplaces/cl.js"></script>
+    <script src="marketplaces/ae.js"></script>
+    <script src="marketplaces/ps.js"></script>
+    <script src="marketplaces/ot.js"></script>
+    <script src="marketplaces/le.js"></script>
+    <script src="marketplaces/el.js"></script>
+    <script src="marketplaces.js"></script>
+    <script src="popup.js"></script>
+</head>
+<body>
+    <div class="popup">
+        <div class="donate">
+            <a href="https://pay.cloudtips.ru/p/5a8f6fd5" target="_blank" rel="noopener noreferrer">Задонатить</a>
+        </div>
+        <div class="title">
+            <h1>
+                <img src="../icons/icon128.png" height="20" width="20">
+                Шоппер
+            </h1>
+            <div class="title-description">
+                Поиск на всех маркетплейсах сразу!
+            </div>
+        </div>
+
+        <div class="telegram">
+            Наш канал в Telegram: <img id="tg-icon" src="../images/tg.ico"><a href="https://t.me/shopperdev" target="_blank" rel="noopener noreferrer">@shopperdev</a>
+        </div>
+
+        <div class="telegram">
+            <a class="watchlist-link" href="#">Список отслеживаемых товаров</a>
+        </div>
+
+        <div class="settings-section">
+            <input type="checkbox" id="extension-onoff"/>
+            <label for="extension-onoff">Включить расширение</label>
+        </div>
+
+        <div class="settings-section" id="marketplaces-settings">
+            <h2>Искать на маркетплейсах</h2>
+            <div class="legal-note" style="margin-bottom: 8px;">
+                Шоппер не связан с указанными ниже сервисами
+            </div>
+        </div>
+
+        <div class="settings-section settings">
+            <h2>Настройки</h2>
+            <div class="labeled">
+                <input type="checkbox" id="enable-watchlist"/>
+                <label for="enable-watchlist">
+                    <b>Оповещать об изменении цены товаров</b>
+                    <div class="description warn" id="watchlist-warning" style="display: none;">
+                        <img src="../images/warn.png">
+                        <div>Разрешите расширению показ уведомлений чтобы эта функция заработала</div>
+                    </div>
+                    <div class="description">
+                        На карточке товара нажмите <img id="watch-icon" src="../images/watch-on.png">,
+                        чтобы Шоппер оповестил вас, если цена товара изменится.<br>
+                    </div>
+                    <a class="watchlist-link" href="#">Список всех отслеживаемых товаров</a>
+                </label>
+            </div>
+            <div class="labeled">
+                <input type="checkbox" id="allow-selfmarket"/>
+                <label for="allow-selfmarket">
+                    <b>Поиск внутри того же маркетплейса</b>
+                    <div class="description">Например, искать на Ozon когда вы уже находитесь на Ozon</div>
+                </label>
+            </div>
+            <div class="labeled">
+                <input type="checkbox" id="guess-category"/>
+                <label for="guess-category">
+                    <b>Автоматически выбирать категорию товаров</b>
+                    <div class="description">
+                        Автоматически определять в какой категории искать товары на других маркетплейсах.
+                        Обычно так поиск точнее, но иногда нужный товар не удается найти.
+                    </div>
+                </label>
+            </div>
+            <div class="labeled">
+                <input type="checkbox" id="show-reviews"/>
+                <label for="show-reviews">
+                    <b>Показывать рейтинг и количество отзывов</b>
+                </label>
+            </div>
+        </div>
+
+        <div class="bugreport">
+            <div>Расширение не работает?</div>
+            <div id="send-bugreport">Отправить отчет об ошибке</div>
+        </div>
+
+        <dialog id="bugreport-dialog">
+            <div class="dialog-content">
+                <div class="dialog-title">Отчет об ошибке</div>
+                <label for="dialog-message">Расскажите что не работает?</label>
+                <textarea id="dialog-message" rows="10"></textarea>
+                <div class="dialog-subtitle">Также отправим следующие данные:</div>
+                <div id="dialog-info"></div>
+                <button id="send-bugreport-btn">Отправить отчет</button>
+            </div>
+        </dialog>
+        <!-- <div class="info">
+            <div id="ext-version"></div>
+            <div id="install-id"></div>
+        </div> -->
+
+        <div class="legal-note" style="margin-top: 18px;">
+            <div><b>Правовая информация</b></div>
+            Расширение Шоппер является информационным посредником и не занимается продажей товаров.
+            Все упомянутые товарные знаки, логотипы, наименования компаний и/или доменные имена принадлежат их правообладателям
+            и используются только в информационных целях. Расширение не связано и не аффилировано с указанными компаниями или сервисами.
+            <div><a href="https://shopper.bonbot.ru/privacy-policy.txt">Пользовательское соглашение</a></div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,895 @@
+.abc-shopper {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(0, 48, 120, .039);
+}
+
+.abc-shopper a {
+    text-decoration: none;
+}
+
+.abc-shopper-caption {
+    font-weight: bold;
+    font-family: sans-serif;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+.abc-shopper-main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    color: #404040;
+    cursor: pointer;
+}
+
+.abc-shopper-main-header a {
+    display: flex;
+    align-items: baseline;
+    color: #404040;
+    text-decoration: none;
+}
+
+.abc-shopper-brand {
+    flex: 1;
+    line-height: 14px;
+    font-size: 12px;
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.abc-shopper-brand img {
+    height: 12px;
+    width: 12px;
+}
+
+.abc-shopper-logo {
+    cursor: pointer;
+
+    --s: 0.1em;
+    --c: #404040;
+
+    padding-bottom: var(--s);
+    background:
+        linear-gradient(90deg, var(--c)50%, #000 0) calc(100% - var(--_p, 0%))/200% 100%,
+        linear-gradient(var(--c) 0 0) 0% 100%/var(--_p,0%) var(--s) no-repeat;
+    -webkit-background-clip: text,padding-box;
+            background-clip: text,padding-box;
+    transition: 0.2s;
+}
+
+.abc-shopper-main-header > img {
+    margin-left: 6px;
+    cursor: pointer;
+    height: 12px;
+    width: 12px;
+}
+
+.abc-shopper-logo:hover {
+    color: #000;
+    --_p: 100%
+}
+
+.abc-shopper-logo img {
+    margin-right: 3px;
+}
+
+.abc-shopper-tooltip {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    background: black;
+    color: white;
+    padding: 16px;
+    border-radius: 8px;
+    z-index: 9999;
+
+    --shopper-share-title-max-font-size: 16px;
+}
+
+.abc-shopper-tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.abc-shopper-tooltip-title {
+    font-weight: bold;
+    font-size: min(1.25em, var(--shopper-share-title-max-font-size));
+    text-align: center;
+    font-family: sans-serif;
+    text-align: center;
+    width: 100%;
+}
+
+.abc-shopper-tooltip-close {
+    cursor: pointer;
+    height: 14px;
+    width: 14px;
+}
+
+.abc-shopper-tooltip-text {
+    font-family: sans-serif;
+    font-size: 1.1em;
+    font-size: min(1.1em, 14px);
+    line-height: min(1.3em, 16px);
+    text-align: center;
+}
+
+.abc-shopper-tooltip-text b {
+    font-weight: bold;
+}
+
+.abc-shopper-share-hint {
+    font-size: 0.85em;
+    color: #aaaaaa;
+    font-weight: bold;
+    margin: auto;
+    margin-top: 12px;
+}
+
+a.abc-shopper-shopoholics-channel {
+    display: block;
+    margin-top: 9px;
+    margin-bottom: 9px;
+    text-decoration: underline;
+    color: #b0b0ff;
+    text-align: center;
+    cursor: pointer;
+}
+
+a.abc-shopper-shopoholics-channel:hover {
+    color: rgb(145, 145, 255);
+    text-decoration: underline;
+}
+
+.abc-shopper-share-tooltip-text a.abc-shopper-shopoholics-channel {}
+.abc-shopper-share-dialog-header a.abc-shopper-shopoholics-channel {
+    font-size: 1em;
+    margin-top: 3px;
+}
+
+#abc-shopper-share-dialog .abc-shopper-tooltip-text {
+    display: flex;
+    flex-direction: column;
+    --shopper-share-title-max-font-size: 16px;
+}
+
+.abc-shopper-share-dialog-header {
+    display: flex;
+    flex-direction: row;
+}
+
+.abc-shopper-share-dialog-title {
+    font-weight: bold;
+    font-size: 1.25em;
+    font-size: min(1.25em, var(--shopper-share-title-max-font-size));
+    text-align: center;
+    font-family: sans-serif;
+    text-align: center;
+    width: 100%;
+}
+
+.abc-shopper-share-dialog-label {
+    text-align: left;
+    font-size: 1.1em;
+    font-size: min(1.1em, 14px);
+    margin-top: 12px;
+    margin-bottom: 4px;
+}
+
+.abc-shopper-share-dialog-select {
+    appearance: auto;
+    padding: 6px 4px;
+    background: #eaeaea;
+    font-size: 1.1em;
+    font-size: min(1.1em, 14px);
+}
+
+.abc-shopper-share-dialog-select > option {
+    background: white;
+    border: 1px solid black;
+}
+
+.abc-shopper-share-dialog-text {
+    padding: 4px;
+    background: #eaeaea;
+    font-size: 1.1em;
+    font-size: min(1.1em, 14px);
+}
+
+#abc-shopper-share-dialog-comment-counter {
+    margin-top: 3px;
+    width: 100%;
+    text-align: right;
+    font-size: 0.8em;
+}
+
+#abc-shopper-share-dialog-comment-counter.invalid {
+    color: #ffcccc;
+}
+
+.abc-shopper-share-dialog-text.invalid {
+    outline: 2px solid #cc0000;
+}
+
+.abc-shopper-share-dialog-submit {
+    background-image: linear-gradient(#464d55, #25292e);
+    border-radius: 8px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, .1),0 3px 6px rgba(0, 0, 0, .05);
+    color: #fff;
+    cursor: pointer;
+    font-size: 1.1em;
+    height: auto;
+    padding: 7px 24px;
+    margin: auto;
+    margin-top: 12px;
+    outline: none;
+    transition: all 150ms;
+    border: 1px solid #686868;
+}
+
+.abc-shopper-share-dialog-submit:hover {
+    box-shadow: rgba(0, 1, 0, .2) 0 2px 8px;
+    opacity: .85;
+}
+
+.abc-shopper-share-dialog-submit:hover:disabled {
+    opacity: 1;
+}
+
+.abc-shopper-share-dialog-submit:active {
+    outline: 0;
+}
+
+.abc-shopper-share-dialog-submit:focus {
+    box-shadow: rgba(0, 0, 0, .5) 0 0 0 3px;
+}
+
+.abc-shopper-share-dialog-submit:disabled {
+    background-image: linear-gradient(#777777, #999999);
+    color: #cccccc;
+}
+
+
+.abc-shopper-content {
+    max-height: 430px;
+    overflow-y: auto;
+}
+
+.abc-shopper-prices {
+    margin-top: 4px;
+    margin-left: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 98%;
+}
+
+.abc-shopper-marketplaces-title {
+    margin-top: 18px;
+    font-size: 0.9em;
+    font-weight: bold;
+    font-family: sans-serif;
+}
+
+.abc-shopper-marketplaces-subtitle {
+    font-size: 0.9em;
+    color: #909090;
+    margin-top: 4px;
+}
+
+.abc-shopper-hidden-marketplaces {
+    margin-top: 8px;
+}
+
+.abc-shopper-no-marketplaces {
+    margin-top: 10px;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    color: rgb(144, 144, 144);
+}
+
+.abc-shopper-marketplace {
+    max-width: 100%;
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+.abc-shopper-marketplace-header {
+    display: flex;
+    align-items: center;
+    gap: 0px;
+    margin-top: 4px;
+    margin-bottom: 1px;
+    width: 100%;
+    background: #c7dbff;
+}
+
+a.abc-shopper-marketplace-name {
+    color: #005bff;
+    text-decoration: none;
+    font-size: 14px;
+    display: flex;
+}
+
+a.abc-shopper-marketplace-name:hover {
+    text-decoration: underline;
+}
+
+a.abc-shopper-marketplace-name:visited {
+    color: #005bff;
+}
+
+.abc-shopper-marketplace-name-icon {
+    font-weight: bold;
+    background: #4588ff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+    padding: 2px 2px;
+    padding-right: 1px;
+}
+
+.abc-shopper-marketplace-name-rest {
+    padding: 2px 2px;
+    padding-left: 1px;
+}
+
+.abc-shopper-marketplace-title-actions {
+    font-size: 0.9em;
+    color: #707070;
+}
+
+.abc-shopper-marketplace-title-action,
+.abc-shopper-marketplace-title-action a {
+    cursor: pointer;
+    color: #707070;
+    text-decoration: none;
+}
+
+.abc-shopper-marketplace-title-action:hover,
+.abc-shopper-marketplace-title-action a:hover {
+    color: #707070;
+    text-decoration: underline;
+}
+
+.abc-shopper-marketplace-results {
+    width: 100%;
+}
+
+.abc-shopper-search-error {
+    color: #909090;
+    font-size: 0.9em;
+    margin-top: 4px;
+}
+
+.abc-shopper-marketplace-cards {
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+    margin-top: 4px;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+
+.abc-shopper-marketplace-cards-subblock {
+    display: flex;
+    flex-flow: row;
+    margin: 4px;
+}
+
+.abc-shopper-marketplace-cards-framed-subblock {
+    margin: 4px;
+    border: 2px solid transparent;
+    border-radius: 3px;
+    box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.5);
+    padding: 3px 6px;
+}
+
+.abc-shopper-marketplace-cards-framed-subblock-title {
+    display: inline-block;
+    padding: 1px 4px;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #5a5e78;
+    cursor: default;
+}
+
+.abc-shopper-marketplace-cards-framed-subblock-items {
+    display: flex;
+    flex-flow: row;
+}
+
+.abc-shopper-marketplace-hidden .abc-shopper-marketplace-results {
+    display: none;
+}
+
+.abc-shopper-marketplace-cards-subtitle {
+    color: #909090;
+    font-size: 0.9em;
+    margin-top: 4px;
+}
+
+.abc-shopper-marketplace-card {
+    font-size: 0.9em;
+}
+
+.abc-shopper-marketplace-category {
+    font-family: sans-serif;
+    padding: 1px 8px;
+    border-radius: 2px;
+    color: #404040;
+    display: flex;
+    font-size: 0.9em;
+    font-size: max(12px, 0.9em);
+    line-height: normal;
+    cursor: pointer;
+    /* border: 1px dashed #333333; */
+    color: #505050;
+}
+
+.abc-shopper-marketplace-category:hover {
+    filter: brightness(100%);
+    color: red;
+}
+
+.abc-shopper-marketplace-category-name {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow-x: hidden;
+    flex: 1;
+}
+
+.abc-shopper-marketplace-category-close {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9em;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.abc-shopper-card-tooltip {
+    opacity: 0;
+    background: black;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    white-space: normal;
+    position: absolute;
+    z-index: 1;
+    left: 10%;
+    top: 130%;
+    width: 80%;
+    transition: opacity 0s linear 400ms;
+}
+
+.abc-shopper-card-tooltip::after {
+  content: " ";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -10px;
+  border-width: 10px;
+  border-style: solid;
+  border-color: transparent transparent black transparent;
+}
+
+.abc-shopper-marketplace-category:hover .abc-shopper-card-tooltip {
+    opacity: 1;
+    display: block;
+}
+
+.abc-shopper-marketplace-category:hover .abc-shopper-card-tooltip:hover {
+    opacity: 0;
+    display: none;
+}
+
+.abc-shopper-marketplace-card-marker {
+    position: relative;
+    top: -80;
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+    border: 1px solid #10c44c;
+    background: #10c44c;
+    border-radius: 16px;
+}
+
+.abc-shopper-marketplace-card > a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.abc-shopper-marketplace-card-image-wrapper {
+    display: flex;
+    border: none;
+    border: 1px solid transparent;
+    flex-direction: column;
+    align-items: center;
+}
+
+.abc-shopper-marketplace-card-image-wrapper:hover {
+    border: 1px solid #444444;
+}
+
+.abc-shopper-marketplace-card-image {
+    display: flex;
+    padding: 2px;
+    margin-bottom: 2px;
+    width: auto;
+    min-width: 80px;
+    height: 80px;
+    max-height: 80px;
+}
+
+.abc-shopper-marketplace-card-image img {
+    display: block;
+    border: 1px solid #cccccc;
+    margin: auto auto;
+    height: auto;
+    width: auto;
+    max-height: 100%;
+    max-width: 100%;
+}
+
+.abc-shopper-marketplace-card-price {
+    color: black;
+    margin-top: 4px;
+    font-weight: bold;
+    font-family: sans-serif;
+}
+
+.abc-shopper-marketplace-card-price-lower {
+    color: #008600;
+    margin-right: 4px;
+}
+
+.abc-shopper-marketplace-card-price-higher {
+    color: #a30505;
+    margin-right: 4px;
+}
+
+.abc-shopper-marketplace-card-reviews {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    margin-bottom: 2px;
+    color: #707070;
+}
+
+.abc-shopper-marketplace-card-reviews img {
+    display: inline;
+    height: 1em;
+    width: 1em;
+    margin-right: 3px;
+    margin-left: 2px;
+}
+
+.abc-shopper-marketplace-card-tooltip {
+    position: absolute;
+    z-index: 2147483647;
+    visibility: hidden;
+    left: auto;
+    right: 370px;
+    top: 140px;
+    height: auto;
+    width: 340px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: black;
+    box-shadow: 0px 0px 8px 10px #c0c0c0;
+}
+
+.abc-shopper-highlight {
+    font-weight: bold;
+    color: #c10000;
+}
+
+.abc-shopper-marketplace-card-tooltip-footer {
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+
+.abc-shopper-marketplace-card-tooltip-footer-legal {
+    color: #555555;
+    text-align: center;
+    margin: auto;
+    margin-top: 8px;
+    font-family: system-ui;
+    font-style: italic;
+    font-size: 0.85em;
+}
+
+.abc-shopper-marketplace-card-tooltip-image {
+    display: flex;
+    flex-direction: column;
+    min-height: fit-content;
+}
+
+.abc-shopper-marketplace-card-tooltip-image img {
+    border: 1px solid #dfdfdf;
+    height: auto;
+    width: auto;
+    margin: auto;
+    max-height: 260px;
+    max-width: 100%;
+}
+
+.abc-shopper-marketplace-card-tooltip-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.abc-shopper-marketplace-card-tooltip-price {
+    margin-top: 12px;
+    font-size: 24px;
+    font-weight: 800;
+    width: auto;
+    text-align: center;
+}
+
+.abc-shopper-marketplace-card-tooltip-percent {
+    margin-top: 4px;
+    font-size: 14px;
+    width: auto;
+    text-align: center;
+}
+
+.abc-shopper-marketplace-card-tooltip-reviews {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    color: #777777;
+    margin-top: 4px
+}
+
+.abc-shopper-marketplace-card-tooltip-reviews img {
+    display: inline;
+    height: 1em;
+    width: 1em;
+    margin-right: 6px;
+}
+
+.abc-shopper-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    font-style: italic;
+    margin-left: 2px;
+    margin-bottom: 5px;
+}
+
+.abc-shopper-controls-button, .abc-shopper-controls-dropdown {
+    display: flex;
+    border: 1px solid #999999;
+    border-radius: 3px;
+    padding: 2px;
+    cursor: pointer;
+    background-image: linear-gradient(#f7f8fa ,#e7e9ec);
+}
+
+.abc-shopper-controls-dropdown {
+    position: relative;
+}
+
+.abc-shopper-controls-button.enabled {
+    box-shadow: #15a725bf 0px 0px 3px 1px;
+    border-color: #15a725;
+}
+
+.abc-shopper-controls-button:hover, .abc-shopper-controls-dropdown:hover {
+    border: 1px solid #444444;
+}
+
+.abc-shopper-controls-button:active, .abc-shopper-controls-dropdown:active {
+    background-image: linear-gradient(#e7e9ec, #f7f8fa);
+}
+
+.abc-shopper-controls-button:active {
+    transform: translateY(1px);
+}
+
+
+.abc-shopper-controls-button img, .abc-shopper-controls-dropdown img {
+    height: 12px;
+    width: 12px;
+}
+
+.abc-shopper-controls-dropdown-items {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    font-style: normal;
+    border: 1px solid #cccccc;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.abc-shopper-controls-dropdown-items-header {
+    display: block;
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 6px 12px;
+}
+
+.abc-shopper-controls-dropdown-items-item {
+    color: black;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.abc-shopper-controls-dropdown-items-item:hover {
+    background-color: #ddd;
+}
+
+.abc-shopper-controls-dropdown-items-item > img {
+    height: 1.1em;
+    width: 1.1em;
+    margin-right: 4px;
+}
+
+.abc-shopper-controls-watch-prices {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    font-size: max(0.9em, 13px);
+}
+
+.abc-shopper-controls-watch-prices.disabled {
+    color: #cfcfcf;
+}
+
+.abc-shopper-controls-watch-prices-link {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+
+.abc-shopper-controls-watch-prices-price {
+}
+
+.abc-shopper-watch-dialog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.abc-shopper-watch-dialog-min-price {
+    font-size: 1.1em;
+}
+
+#abc-shopper-watch-dialog-min-price {
+    font-size: 1.1em;
+    max-width: 120px;
+    text-align: right;
+    color: black;
+    background: white;
+}
+
+#abc-shopper-watch-dialog-submit {
+    border: 1px solid white;
+    border-radius: 6px;
+    color: white;
+    background: black;
+    padding: 5px 11px;
+}
+
+.abc-shopper-controls-watchlist {
+    margin-left: auto;
+}
+
+.abc-shopper-licence-agreement {
+    font-size: 0.8em;
+    color: #cccccc;
+    font-family: system-ui;
+    font-style: italic;
+}
+
+.abc-shopper-licence-agreement a {
+    text-decoration: underline;
+    color: #cccccc;
+}
+
+.abc-shopper-price-history-wrapper {
+    margin-top: 8px;
+}
+
+.abc-shopper-ads-head {
+    gap: 4px;
+    margin-bottom: 10px;
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.abc-shopper-ads-head-content {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.abc-shopper-ads-head-content > .abc-shopper-ads-head-content-icon {
+    height: 16px;
+    width: 16px;
+    display: block;
+}
+
+.abc-shopper-ads-head-content > a, .abc-shopper-ads-head-content > a:visited {
+    /* text-decoration: underline; */
+    color: #3261ef;
+    text-underline-offset: 2px;
+}
+
+.abc-shopper-ads-head-content .abc-shopper-ads-head-content-wide-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 60px;
+}
+
+.abc-shopper-ads-head-legal {
+    font-size: 0.85em;
+    color: #777777;
+    cursor: pointer;
+}
+
+.abc-shopper-ads-head-legal.overflow-content {
+    position: absolute;
+    color: black;
+    background: #ffffffbb;
+    padding: 0px 5px;
+}
+
+
+.abc-shopper-ads-head-legal:hover {
+    color: #111111;
+}
+
+#abc-shopper-ads-head-tooltip {
+    width: 450px;
+    max-width: 450px;
+}
+
+.abc-shopper-ads-head-tooltip-content-img {
+    width: 100%;
+    height: auto;
+}
+
+.abc-shopper-ads-head-tooltip-content-description {
+    margin-top: 6px;
+}

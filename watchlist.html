@@ -1,0 +1,75 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="watchlist.css">
+    <script src="../src/logger.js"></script>
+    <script src="../src/config.js"></script>
+    <script src="../src/util.js"></script>
+    <script src="../src/shopper-server.js"></script>
+    <script src="../src/marketplaces/common.js"></script>
+    <script src="../src/marketplaces/wb.js"></script>
+    <script src="../src/marketplaces/oz.js"></script>
+    <script src="../src/marketplaces/ym.js"></script>
+    <script src="../src/marketplaces/mm.js"></script>
+    <script src="../src/marketplaces/pt.js"></script>
+    <script src="../src/marketplaces/dm.js"></script>
+    <script src="../src/marketplaces/vi.js"></script>
+    <script src="../src/marketplaces/lm.js"></script>
+    <script src="../src/marketplaces/cl.js"></script>
+    <script src="../src/marketplaces/ae.js"></script>
+    <script src="../src/marketplaces/ps.js"></script>
+    <script src="../src/marketplaces/ot.js"></script>
+    <script src="../src/marketplaces/le.js"></script>
+    <script src="../src/marketplaces/el.js"></script>
+    <script src="../src/marketplaces.js"></script>
+    <script src="../src/watchlist.js"></script>
+    <script src="../src/chart.js"></script>
+    <script src="watchlist.js"></script>
+</head>
+<body>
+    <main>
+        <h1><img src="../icons/icon128.png">Шоппер</h1>
+        <h2>Список отслеживаемых товаров</h2>
+        <div id="no-data" style="display: none">
+            Вы не отслеживаете ни одного товара.<br><br>
+            Откройте карточку любого товара и нажмите <img id="watch-icon" src="../images/watch-on.png">,
+            чтобы следить за ценой товара<br>
+            и получать оповещения, когда она упадет ниже заданного порога
+        </div>
+        <div id="has-data">
+            <div class="info">
+                Шоппер периодически проверяет цены на товары, когда компьютер включен, и оповещает, если цена падает ниже установленного порога.<br>
+                История цен хранится в течение трех месяцев.<br>
+                Если отключить слежение за ценой товара, он автоматически удалится из списка через месяц.
+            </div>
+            <div class="color-schema">
+                <span class="color-box updated">Цена обновлена<span id="updated-count"></span></span>
+                <span class="color-box alarmed">Цена ниже порога<span id="alarmed-count"></span></span>
+                <span class="color-box refreshing">Идет обновление цены<span id="refreshing-count"></span></span>
+                <span class="color-box error">Ошибка при обновлении цены<span id="error-count"></span></span>
+                <span class="color-box disabled">Слежение за товаром отключено<span id="disabled-count"></span></span>
+            </div>
+            <div class="controls">
+                <button id="delete-all">Удалить все товары</button>
+                <button id="refresh-all">Обновить все товары</button>
+            </div>
+            <table id="watchlist">
+                <thead>
+                    <tr>
+                        <th scope="col">Вкл</th>
+                        <th scope="col"></th>
+                        <th scope="col">Товар</th>
+                        <th scope="col">Магазин</th>
+                        <th scope="col">Диапазон цен</th>
+                        <th scope="col">Порог</th>
+                        <th scope="col">Последняя<br>цена</th>
+                        <th scope="col">Обновлено</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
