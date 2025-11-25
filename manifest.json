@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "PriceHunt",
+  "version": "1.0.0",
+  "description": "Browser extension that helps track and compare prices across supported stores.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "*://*.ozon.ru/*",
+    "*://*.wildberries.ru/*",
+    "*://*.market.yandex.ru/*"
+  ],
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.ozon.ru/*"
+      ],
+      "js": ["content-scripts/ozon.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.wildberries.ru/*"
+      ],
+      "js": ["content-scripts/wildberries.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.market.yandex.ru/*"
+      ],
+      "js": ["content-scripts/yandex-market.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
